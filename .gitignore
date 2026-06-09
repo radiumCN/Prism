@@ -1,15 +1,19 @@
-# Binaries for programs and plugins
+# Go
+server/vendor/
 *.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+# Node
+web/node_modules/
+web/.next/
+web/out/
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# Env（.env.example 可提交，.env 不提交）
+*.env.local
+server/.env
+web/.env.local
+config.yaml
+
+# OS
+.DS_Store
+Thumbs.db

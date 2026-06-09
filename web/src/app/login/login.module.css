@@ -1,0 +1,324 @@
+/* ── 页面容器 ──────────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  /* 比全局背景更深，让卡片有对比 */
+  background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,58,237,0.28) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 50% at 80% 90%, rgba(99,102,241,0.22) 0%, transparent 55%),
+              linear-gradient(160deg, #09071a 0%, #130f2e 45%, #0e0c22 100%);
+}
+
+/* ── 装饰星点 ──────────────────────────────────────────────── */
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 18% 22%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 72% 14%, rgba(255,255,255,0.4)  0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 44% 68%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 55%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 82%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 35%, rgba(255,255,255,0.25) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── 发光光晕 ──────────────────────────────────────────────── */
+.orb1 {
+  position: fixed;
+  top: -160px;
+  left: -160px;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.45) 0%, transparent 65%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+.orb2 {
+  position: fixed;
+  bottom: -120px;
+  right: -120px;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.3) 0%, transparent 65%);
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+}
+.orb3 {
+  position: fixed;
+  top: 38%;
+  left: 58%;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 65%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── 卡片 ──────────────────────────────────────────────────── */
+.card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: 44px 40px 40px;
+  border-radius: 24px;
+  /* 明显比背景亮，形成对比 */
+  background: rgba(255, 255, 255, 0.075);
+  backdrop-filter: blur(32px) saturate(1.4);
+  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(124, 58, 237, 0.2),
+    0 32px 80px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* ── Logo 区域 ─────────────────────────────────────────────── */
+.logoWrap {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.logoIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  margin-bottom: 16px;
+  box-shadow:
+    0 12px 28px rgba(109, 40, 217, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 1px 0 rgba(255,255,255,0.2) inset;
+  /* 用 SVG 纯色闪电，避免 emoji 渲染差异 */
+  background-image:
+    linear-gradient(145deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+}
+
+.logoSvg {
+  width: 32px;
+  height: 32px;
+  fill: #fff;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+}
+
+.logoTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 12px rgba(124,58,237,0.4);
+}
+
+.logoSub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+/* ── Tab 切换器 ────────────────────────────────────────────── */
+.tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 13px;
+  padding: 4px;
+  margin-bottom: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab {
+  position: relative;
+  z-index: 1;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.42);
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: color 0.2s;
+  letter-spacing: 1.5px;
+}
+
+.tabActive {
+  color: #fff;
+}
+
+.tabSlider {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  background: linear-gradient(135deg, #7c3aed 0%, #9461f7 100%);
+  border-radius: 10px;
+  transition: transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.5);
+}
+
+/* ── 表单 ──────────────────────────────────────────────────── */
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Form.Item 间距 */
+.form :global(.ant-form-item) {
+  margin-bottom: 16px !important;
+}
+
+/* ── 输入框 ────────────────────────────────────────────────── */
+/* 外层 affix-wrapper */
+.form :global(.ant-input-affix-wrapper) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1.5px solid rgba(167, 139, 250, 0.35) !important;
+  border-radius: 12px !important;
+  padding: 11px 14px !important;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s !important;
+  box-shadow: none !important;
+}
+
+.form :global(.ant-input-affix-wrapper:hover) {
+  border-color: rgba(167, 139, 250, 0.6) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+}
+
+.form :global(.ant-input-affix-wrapper-focused),
+.form :global(.ant-input-affix-wrapper:focus-within) {
+  border-color: #a78bfa !important;
+  background: rgba(167, 139, 250, 0.08) !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2) !important;
+}
+
+/* 内部 input */
+.form :global(.ant-input) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 14px !important;
+  caret-color: #a78bfa;
+}
+
+.form :global(.ant-input::placeholder) {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 密码 input */
+.form :global(.ant-input-password input) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  caret-color: #a78bfa;
+}
+.form :global(.ant-input-password input::placeholder) {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* prefix 图标 */
+.form :global(.ant-input-prefix) {
+  margin-right: 10px;
+  color: rgba(167, 139, 250, 0.6) !important;
+}
+
+/* 密码眼睛图标 */
+.form :global(.ant-input-suffix .anticon) {
+  color: rgba(255, 255, 255, 0.3) !important;
+  font-size: 15px;
+}
+.form :global(.ant-input-suffix .anticon:hover) {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* 校验错误 */
+:global(.ant-form-item-explain-error) {
+  font-size: 12px !important;
+  padding-left: 2px !important;
+  color: #f87171 !important;
+}
+
+/* ── 验证码行 ──────────────────────────────────────────────── */
+.codeRow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.codeRow .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.sendCodeBtn {
+  flex-shrink: 0;
+  height: 46px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  border: 1.5px solid rgba(167, 139, 250, 0.4) !important;
+  background: rgba(124, 58, 237, 0.12) !important;
+  color: #a78bfa !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  transition: all 0.2s !important;
+}
+
+.sendCodeBtn:not(:disabled):hover {
+  border-color: #a78bfa !important;
+  background: rgba(124, 58, 237, 0.22) !important;
+  color: #c4b5fd !important;
+}
+
+.sendCodeBtn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  color: rgba(167, 139, 250, 0.5) !important;
+}
+
+/* ── 提交按钮 ──────────────────────────────────────────────── */
+.submitBtn {
+  margin-top: 4px;
+  height: 48px !important;
+  border-radius: 13px !important;
+  border: none !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #9461f7 55%, #a78bfa 100%) !important;
+  color: #fff !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 3px;
+  box-shadow:
+    0 8px 24px rgba(124, 58, 237, 0.5),
+    0 1px 0 rgba(255,255,255,0.15) inset !important;
+  transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s !important;
+}
+
+.submitBtn:not(:disabled):hover {
+  opacity: 0.92 !important;
+  transform: translateY(-1.5px);
+  box-shadow:
+    0 12px 30px rgba(124, 58, 237, 0.65),
+    0 1px 0 rgba(255,255,255,0.15) inset !important;
+}
+
+.submitBtn:not(:disabled):active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4) !important;
+}
