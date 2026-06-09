@@ -112,6 +112,32 @@ func (h *AdminHandler) DeleteModel(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// GetProviderModels returns the model list associated with a provider.
+func (h *AdminHandler) GetProviderModels(c *gin.Context) {
+	providerID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	pms, err := h.adminSvc.GetProviderModels(uint(providerID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, pms)
+}
+
+// SetProviderModels replaces the model list for a provider (full replace).
+func (h *AdminHandler) SetProviderModels(c *gin.Context) {
+	providerID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	var req dto.SetProviderModelsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.adminSvc.SetProviderModels(uint(providerID), req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "provider models updated"})
+}
+
 func (h *AdminHandler) GetSettings(c *gin.Context) {
 	settings, err := h.adminSvc.GetSettings()
 	if err != nil {

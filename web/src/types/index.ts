@@ -11,17 +11,38 @@ export interface AuthResponse {
   user: User;
 }
 
+/** Pure model definition, independent of any provider. */
 export interface AIModel {
   id: number;
-  provider_id: number;
   model_name: string;
   display_name: string;
   type: 'chat' | 'image' | 'video';
   max_tokens: number;
   supports_streaming: boolean;
   supports_vision: boolean;
+  config_json?: string;
   status: string;
-  provider?: Provider;
+}
+
+/** A (provider, model) combination returned by /api/models for chat use. */
+export interface ModelInfo {
+  provider_id: number;
+  provider_name: string;
+  model_id: number;
+  model_name: string;
+  display_name: string;
+  type: 'chat' | 'image' | 'video';
+  max_tokens: number;
+  supports_streaming: boolean;
+  supports_vision: boolean;
+}
+
+/** Join table row returned by GET /admin/providers/:id/models */
+export interface ProviderModel {
+  provider_id: number;
+  model_id: number;
+  status: string;
+  model?: AIModel;
 }
 
 export interface Provider {
@@ -35,6 +56,7 @@ export interface Conversation {
   id: number;
   title: string;
   model_id: number;
+  provider_id: number;
   created_at: string;
   updated_at: string;
 }

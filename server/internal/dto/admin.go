@@ -7,8 +7,9 @@ type UpsertProviderRequest struct {
 	Status  string `json:"status"`
 }
 
+// UpsertModelRequest no longer requires a ProviderID.
+// Models are defined independently and associated with providers separately.
 type UpsertModelRequest struct {
-	ProviderID       uint   `json:"provider_id" binding:"required"`
 	ModelName        string `json:"model_name" binding:"required,max=100"`
 	DisplayName      string `json:"display_name" binding:"required,max=200"`
 	Type             string `json:"type" binding:"required,oneof=chat image video"`
@@ -19,6 +20,26 @@ type UpsertModelRequest struct {
 	Status           string `json:"status"`
 }
 
+// SetProviderModelsRequest sets the complete list of models associated with a provider.
+type SetProviderModelsRequest struct {
+	ModelIDs []uint `json:"model_ids" binding:"required"`
+}
+
 type UpdateSettingsRequest struct {
 	Settings map[string]string `json:"settings" binding:"required"`
+}
+
+// ModelInfo is the response shape for the public /api/models endpoint.
+// It combines model metadata with provider context so the chat UI can
+// display "GPT-4o (OpenAI)" style entries and send both IDs when creating a conversation.
+type ModelInfo struct {
+	ProviderID       uint   `json:"provider_id"`
+	ProviderName     string `json:"provider_name"`
+	ModelID          uint   `json:"model_id"`
+	ModelName        string `json:"model_name"`
+	DisplayName      string `json:"display_name"`
+	Type             string `json:"type"`
+	MaxTokens        int    `json:"max_tokens"`
+	SupportsStreaming bool   `json:"supports_streaming"`
+	SupportsVision   bool   `json:"supports_vision"`
 }

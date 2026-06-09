@@ -4,11 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm, message, Tag, Switch, InputNumber } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
-import type { AIModel, Provider } from '@/types';
+import type { AIModel } from '@/types';
+
+const MODEL_TYPES = [
+  { value: 'chat', label: '对话' },
+  { value: 'image', label: '图像生成' },
+  { value: 'video', label: '视频生成' },
+];
 
 export default function ModelsTable() {
   const [models, setModels] = useState<AIModel[]>([]);
-  const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<AIModel | null>(null);
@@ -16,18 +21,15 @@ export default function ModelsTable() {
 
   const load = () => {
     setLoading(true);
-    Promise.all([
-      api.get<AIModel[]>('/admin/models'),
-      api.get<Provider[]>('/admin/providers'),
-    ]).then(([m, p]) => {
-      setModels(m);
-      setProviders(p);
-    }).catch(console.error).finally(() => setLoading(false));
+    api.get<AIModel[]>('/admin/models')
+      .then(setModels)
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
 
-  const handleSave = async (values: Partial<AIModel> & { api_key?: string }) => {
+  const handleSave = async (values: Partial<AIModel>) => {
     try {
       if (editingModel) {
         await api.put(`/admin/models/${editingModel.id}`, values);
@@ -45,9 +47,8 @@ export default function ModelsTable() {
   };
 
   const handleToggleStatus = async (model: AIModel) => {
-    const newStatus = model.status === 'active' ? 'inactive' : 'active';
     try {
-      await api.put(`/admin/models/${model.id}`, { ...model, status: newStatus });
+      await api.put(`/admin/models/${model.id}`, { ...model, status: model.status === 'active' ? 'inactive' : 'active' });
       load();
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : '操作失败');
@@ -79,7 +80,10 @@ export default function ModelsTable() {
 
   return (
     <>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+          在此定义全局模型，再从各供应商的「支持的模型」Tab 中关联。
+        </span>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>添加模型</Button>
       </div>
 
@@ -87,25 +91,57 @@ export default function ModelsTable() {
         dataSource={models}
         rowKey="id"
         loading={loading}
-        scroll={{ x: 900 }}
+        scroll={{ x: 800 }}
         columns={[
-          { title: '供应商', key: 'provider', render: (_, r) => r.provider?.name || r.provider_id },
-          { title: '模型名称', dataIndex: 'model_name', key: 'model_name' },
+          {
+            title: '模型标识符',
+            dataIndex: 'model_name',
+            key: 'model_name',
+            render: (v) => <code style={{ fontSize: 12 }}>{v}</code>,
+          },
           { title: '显示名称', dataIndex: 'display_name', key: 'display_name' },
-          { title: '类型', dataIndex: 'type', key: 'type', render: (v) => <Tag>{v}</Tag> },
-          { title: 'Max Tokens', dataIndex: 'max_tokens', key: 'max_tokens' },
+          {
+            title: '类型',
+            dataIndex: 'type',
+            key: 'type',
+            width: 100,
+            render: (v) => (
+              <Tag color={v === 'chat' ? 'blue' : v === 'image' ? 'purple' : 'orange'}>
+                {MODEL_TYPES.find((t) => t.value === v)?.label ?? v}
+              </Tag>
+            ),
+          },
+          { title: 'Max Tokens', dataIndex: 'max_tokens', key: 'max_tokens', width: 110 },
+          {
+            title: '流式',
+            dataIndex: 'supports_streaming',
+            key: 'supports_streaming',
+            width: 60,
+            render: (v) => v ? <Tag color="green">✓</Tag> : <Tag>—</Tag>,
+          },
+          {
+            title: '视觉',
+            dataIndex: 'supports_vision',
+            key: 'supports_vision',
+            width: 60,
+            render: (v) => v ? <Tag color="purple">✓</Tag> : <Tag>—</Tag>,
+          },
           {
             title: '启用',
             key: 'status',
+            width: 70,
             render: (_, record) => (
               <Switch
+                size="small"
                 checked={record.status === 'active'}
                 onChange={() => handleToggleStatus(record)}
               />
             ),
           },
           {
-            title: '操作', key: 'action',
+            title: '操作',
+            key: 'action',
+            width: 120,
             render: (_, record) => (
               <Space>
                 <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>编辑</Button>
@@ -123,39 +159,43 @@ export default function ModelsTable() {
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         footer={null}
-        width={560}
+        width={520}
       >
-        <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Form.Item name="provider_id" label="供应商" rules={[{ required: true }]}>
-            <Select options={providers.map((p) => ({ value: p.id, label: p.name }))} />
+        <Form form={form} layout="vertical" onFinish={handleSave} style={{ marginTop: 8 }}>
+          <Form.Item
+            name="model_name"
+            label="模型标识符"
+            extra="填写 API 请求中使用的实际模型 ID，如 gpt-4o、claude-3-5-sonnet-20241022"
+            rules={[{ required: true, message: '请输入模型标识符' }]}
+          >
+            <Input placeholder="gpt-4o" />
           </Form.Item>
-          <Form.Item name="model_name" label="模型标识符" rules={[{ required: true }]}>
-            <Input placeholder="gpt-4o / claude-3-5-sonnet-20241022" />
-          </Form.Item>
-          <Form.Item name="display_name" label="显示名称" rules={[{ required: true }]}>
+          <Form.Item name="display_name" label="显示名称" rules={[{ required: true, message: '请输入显示名称' }]}>
             <Input placeholder="GPT-4o" />
           </Form.Item>
           <Form.Item name="type" label="类型" rules={[{ required: true }]}>
-            <Select options={[
-              { value: 'chat', label: '对话' },
-              { value: 'image', label: '图像生成' },
-              { value: 'video', label: '视频生成' },
-            ]} />
+            <Select options={MODEL_TYPES} />
           </Form.Item>
-          <Form.Item name="max_tokens" label="最大 Token 数">
-            <InputNumber min={256} max={200000} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="supports_streaming" label="支持流式" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="supports_vision" label="支持视觉" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="status" label="状态">
-            <Select options={[{ value: 'active', label: '启用' }, { value: 'inactive', label: '禁用' }]} />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>保存</Button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Form.Item name="max_tokens" label="最大 Token 数">
+              <InputNumber min={256} max={200000} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item name="status" label="状态">
+              <Select options={[{ value: 'active', label: '启用' }, { value: 'inactive', label: '禁用' }]} />
+            </Form.Item>
+          </div>
+          <div style={{ display: 'flex', gap: 24 }}>
+            <Form.Item name="supports_streaming" label="支持流式输出" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Form.Item name="supports_vision" label="支持视觉（多模态）" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </div>
+          <Form.Item style={{ marginBottom: 0, marginTop: 4 }}>
+            <Button type="primary" htmlType="submit" block>
+              {editingModel ? '保存更改' : '添加模型'}
+            </Button>
           </Form.Item>
         </Form>
       </Modal>

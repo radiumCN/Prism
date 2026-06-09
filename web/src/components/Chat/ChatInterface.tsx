@@ -14,7 +14,7 @@ import { RobotOutlined, UserOutlined, ThunderboltOutlined } from '@ant-design/ic
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { createChatProvider, type ChatMessage } from '@/lib/chatProvider';
-import type { AIModel, Message } from '@/types';
+import type { ModelInfo, Message } from '@/types';
 
 const { Text } = Typography;
 
@@ -33,21 +33,25 @@ const PROMPTS: PromptsProps['items'] = [
 export default function ChatInterface({ conversationId, onConversationCreated }: Props) {
   const { token } = theme.useToken();
   const accessToken = useAuthStore((s) => s.accessToken) || '';
-  const [models, setModels] = useState<AIModel[]>([]);
-  const [selectedModel, setSelectedModel] = useState<number | null>(null);
+  const [models, setModels] = useState<ModelInfo[]>([]);
+  const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Provider cache per conversation
-  const providerRef = useRef<ReturnType<typeof createChatProvider> | null>(null);
-  const convIdRef = useRef<number | null>(null);
+  // Holds a message typed/clicked before a conversation existed; sent once provider is ready.
+  const pendingMessageRef = useRef<string | null>(null);
+  // ID of the conversation we just created — skip history loading for it (it's empty anyway)
+  // so Effect 2 doesn't wipe messages that Effect 1 is about to insert.
+  const justCreatedConvRef = useRef<number | null>(null);
+  // Stable refs so effects don't need these in their dep arrays
+  const onRequestRef = useRef<typeof onRequest | null>(null);
+  const selectedModelRef = useRef(selectedModel);
+  selectedModelRef.current = selectedModel;
 
+  // Re-create provider whenever conversationId or token changes.
+  // Guard: return null if either is missing so we never send "Bearer ".
   const provider = useMemo(() => {
-    if (!conversationId) return null;
-    if (convIdRef.current !== conversationId) {
-      providerRef.current = createChatProvider(conversationId, accessToken, selectedModel ?? undefined);
-      convIdRef.current = conversationId;
-    }
-    return providerRef.current!;
+    if (!conversationId || !accessToken) return null;
+    return createChatProvider(conversationId, accessToken, selectedModel?.model_id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, accessToken]);
 
@@ -62,14 +66,37 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
     },
   });
 
+  // Keep onRequest ref up-to-date without adding it to effect deps
+  onRequestRef.current = onRequest;
+
   useEffect(() => {
-    api.get<AIModel[]>('/models?type=chat').then(setModels).catch(console.error);
+    api.get<ModelInfo[]>('/models?type=chat').then((list) => {
+      const safe = list ?? [];
+      setModels(safe);
+      if (safe.length > 0 && !selectedModelRef.current) setSelectedModel(safe[0]);
+    }).catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load history when conversation changes
+  // When conversationId + provider become ready, flush any pending message
+  useEffect(() => {
+    if (conversationId && provider && pendingMessageRef.current) {
+      const content = pendingMessageRef.current;
+      pendingMessageRef.current = null;
+      onRequestRef.current?.({ content, modelId: selectedModelRef.current?.model_id });
+    }
+  }, [conversationId, provider]);
+
+  // Load history when conversation changes.
+  // Skip for newly-created conversations: they have no history and loading would
+  // call setMessages([]) which wipes the pending message that Effect 1 just sent.
   useEffect(() => {
     if (!conversationId) {
       setMessages([]);
+      return;
+    }
+    if (justCreatedConvRef.current === conversationId) {
+      justCreatedConvRef.current = null;
       return;
     }
     setIsLoading(true);
@@ -92,27 +119,27 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
     if (!content.trim()) return;
 
     if (!conversationId) {
-      // Create new conversation first
-      if (!selectedModel) {
-        const firstChatModel = models[0];
-        if (!firstChatModel) return;
-        setSelectedModel(firstChatModel.id);
-      }
+      const model = selectedModel ?? models[0];
+      if (!model) return;
+      // Save message so it gets sent once the conversation + provider are ready
+      pendingMessageRef.current = content;
       try {
         const conv = await api.post<{ id: number }>('/conversations', {
           title: content.slice(0, 50),
-          model_id: selectedModel || models[0]?.id,
+          model_id: model.model_id,
+          provider_id: model.provider_id,
         });
+        // Mark BEFORE notifying parent so the history-load effect can skip it
+        justCreatedConvRef.current = conv.id;
         onConversationCreated?.(conv.id);
-        // Message will be sent after provider re-creation via useEffect
-        return;
       } catch (err) {
+        pendingMessageRef.current = null;
         console.error(err);
-        return;
       }
+      return;
     }
 
-    onRequest({ content, modelId: selectedModel ?? undefined });
+    onRequest({ content, modelId: selectedModel?.model_id });
   };
 
   const handlePromptClick: PromptsProps['onItemClick'] = (info) => {
@@ -135,12 +162,16 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
         <Select
           size="small"
           placeholder="选择模型"
-          value={selectedModel}
-          onChange={setSelectedModel}
-          style={{ minWidth: 200 }}
+          value={selectedModel ? `${selectedModel.provider_id}:${selectedModel.model_id}` : undefined}
+          onChange={(val) => {
+            const [pid, mid] = (val as string).split(':').map(Number);
+            const found = models.find((m) => m.provider_id === pid && m.model_id === mid);
+            if (found) setSelectedModel(found);
+          }}
+          style={{ minWidth: 220 }}
           options={models.map((m) => ({
-            value: m.id,
-            label: `${m.provider?.name ?? ''} / ${m.display_name}`,
+            value: `${m.provider_id}:${m.model_id}`,
+            label: `${m.provider_name} / ${m.display_name}`,
           }))}
         />
       </div>

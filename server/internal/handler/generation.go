@@ -16,23 +16,26 @@ import (
 )
 
 type GenerationHandler struct {
-	modelRepo    *repository.ModelRepository
-	providerRepo *repository.ProviderRepository
-	db           *gorm.DB
-	cfg          *config.Config
+	modelRepo         *repository.ModelRepository
+	providerRepo      *repository.ProviderRepository
+	providerModelRepo *repository.ProviderModelRepository
+	db                *gorm.DB
+	cfg               *config.Config
 }
 
 func NewGenerationHandler(
 	modelRepo *repository.ModelRepository,
 	providerRepo *repository.ProviderRepository,
+	providerModelRepo *repository.ProviderModelRepository,
 	db *gorm.DB,
 	cfg *config.Config,
 ) *GenerationHandler {
 	return &GenerationHandler{
-		modelRepo:    modelRepo,
-		providerRepo: providerRepo,
-		db:           db,
-		cfg:          cfg,
+		modelRepo:         modelRepo,
+		providerRepo:      providerRepo,
+		providerModelRepo: providerModelRepo,
+		db:                db,
+		cfg:               cfg,
 	}
 }
 
@@ -55,23 +58,36 @@ func (h *GenerationHandler) GenerateImage(c *gin.Context) {
 		return
 	}
 
-	apiKey, err := utils.DecryptAES(h.cfg.AES.Key, aiModel.Provider.APIKey)
+	// Resolve which provider to use
+	var provider *model.Provider
+	if req.ProviderID > 0 {
+		provider, err = h.providerRepo.FindByID(req.ProviderID)
+	} else {
+		provider, err = h.providerModelRepo.FindFirstActiveProviderForModel(req.ModelID)
+	}
 	if err != nil {
-		apiKey = aiModel.Provider.APIKey
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no active provider found for this model"})
+		return
 	}
 
-	imgAdapter, err := adapter.NewImageAdapter(aiModel.Provider.Name, apiKey, aiModel.Provider.BaseURL)
+	apiKey, err := utils.DecryptAES(h.cfg.AES.Key, provider.APIKey)
+	if err != nil {
+		apiKey = provider.APIKey
+	}
+
+	imgAdapter, err := adapter.NewImageAdapter(provider.Name, apiKey, provider.BaseURL)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	gen := &model.Generation{
-		UserID:  userID,
-		Type:    "image",
-		ModelID: req.ModelID,
-		Prompt:  req.Prompt,
-		Status:  "processing",
+		UserID:     userID,
+		Type:       "image",
+		ModelID:    req.ModelID,
+		ProviderID: provider.ID,
+		Prompt:     req.Prompt,
+		Status:     "processing",
 	}
 	if err := h.db.Create(gen).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

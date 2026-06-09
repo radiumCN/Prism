@@ -26,11 +26,14 @@ func main() {
 		log.Fatalf("failed to run migrations: %v", err)
 	}
 
+	if err := database.RunCustomMigrations(db); err != nil {
+		log.Fatalf("failed to run custom migrations: %v", err)
+	}
+
 	if err := seed.Run(db); err != nil {
 		log.Fatalf("failed to run seed: %v", err)
 	}
 
-	// Redis（可选，不可用时优雅降级）
 	rdb, redisErr := database.NewRedis(cfg)
 	if redisErr != nil {
 		log.Printf("warning: redis not available: %v", redisErr)
@@ -41,20 +44,21 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	providerRepo := repository.NewProviderRepository(db)
 	modelRepo := repository.NewModelRepository(db)
+	providerModelRepo := repository.NewProviderModelRepository(db)
 	convRepo := repository.NewConversationRepository(db)
 	msgRepo := repository.NewMessageRepository(db)
 	settingRepo := repository.NewSettingRepository(db)
 
 	// Services
 	authSvc := service.NewAuthService(userRepo, rdb, cfg)
-	chatSvc := service.NewChatService(convRepo, msgRepo, modelRepo, providerRepo, cfg)
-	adminSvc := service.NewAdminService(providerRepo, modelRepo, settingRepo, cfg)
+	chatSvc := service.NewChatService(convRepo, msgRepo, modelRepo, providerRepo, providerModelRepo, cfg)
+	adminSvc := service.NewAdminService(providerRepo, modelRepo, providerModelRepo, settingRepo, cfg)
 
 	// Handlers
 	authH := handler.NewAuthHandler(authSvc)
-	chatH := handler.NewChatHandler(chatSvc, modelRepo)
+	chatH := handler.NewChatHandler(chatSvc)
 	adminH := handler.NewAdminHandler(adminSvc)
-	genH := handler.NewGenerationHandler(modelRepo, providerRepo, db, cfg)
+	genH := handler.NewGenerationHandler(modelRepo, providerRepo, providerModelRepo, db, cfg)
 
 	r := router.Setup(cfg, authH, chatH, adminH, genH)
 

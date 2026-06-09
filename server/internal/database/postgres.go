@@ -33,8 +33,22 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.Setting{},
 		&model.Provider{},
 		&model.AIModel{},
+		&model.ProviderModel{},
 		&model.Conversation{},
 		&model.Message{},
 		&model.Generation{},
 	)
+}
+
+// RunCustomMigrations applies one-time DDL changes that AutoMigrate cannot handle,
+// such as dropping old NOT NULL constraints from columns that are no longer part of the model.
+func RunCustomMigrations(db *gorm.DB) error {
+	// ai_models.provider_id was required in the old schema but is no longer used.
+	// Drop the column if it still exists so inserts without a provider_id succeed.
+	if db.Migrator().HasColumn(&model.AIModel{}, "provider_id") {
+		if err := db.Exec(`ALTER TABLE ai_models DROP COLUMN IF EXISTS provider_id`).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

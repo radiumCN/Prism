@@ -55,12 +55,14 @@ export class ModelHubChatProvider extends AbstractChatProvider<ChatMessage, Chat
 export function createChatProvider(conversationId: number, accessToken: string, modelId?: number) {
   const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api');
   const url = `${baseUrl}/conversations/${conversationId}/messages`;
+  // Fall back to localStorage in case the Zustand store hasn't rehydrated yet
+  const token = accessToken || (typeof window !== 'undefined' ? localStorage.getItem('access_token') || '' : '');
 
   return new ModelHubChatProvider({
     request: XRequest<ChatInput, ChatOutput>(url, {
       manual: true,
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       params: {

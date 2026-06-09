@@ -70,6 +70,9 @@ func Setup(
 			providers.POST("", adminH.CreateProvider)
 			providers.PUT("/:id", adminH.UpdateProvider)
 			providers.DELETE("/:id", adminH.DeleteProvider)
+			// Provider-model associations
+			providers.GET("/:id/models", adminH.GetProviderModels)
+			providers.PUT("/:id/models", adminH.SetProviderModels)
 		}
 
 		models := admin.Group("/models")

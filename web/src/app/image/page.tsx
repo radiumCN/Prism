@@ -7,7 +7,7 @@ import AppLayout from '@/components/Layout/AppLayout';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import type { AIModel } from '@/types';
+import type { ModelInfo } from '@/types';
 
 const { Title, Text } = Typography;
 
@@ -17,7 +17,7 @@ interface GeneratedImage {
 }
 
 interface ImageFormValues {
-  model_id: number;
+  modelKey: string; // "provider_id:model_id"
   prompt: string;
   width?: number;
   height?: number;
@@ -26,7 +26,7 @@ interface ImageFormValues {
 export default function ImagePage() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
-  const [models, setModels] = useState<AIModel[]>([]);
+  const [models, setModels] = useState<ModelInfo[]>([]);
   const [generating, setGenerating] = useState(false);
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [form] = Form.useForm<ImageFormValues>();
@@ -36,13 +36,20 @@ export default function ImagePage() {
       router.replace('/login');
       return;
     }
-    api.get<AIModel[]>('/models?type=image').then(setModels).catch(console.error);
+    api.get<ModelInfo[]>('/models?type=image').then((list) => setModels(list ?? [])).catch(console.error);
   }, [isAuthenticated, router]);
 
   const handleGenerate = async (values: ImageFormValues) => {
+    const [providerID, modelID] = values.modelKey.split(':').map(Number);
     setGenerating(true);
     try {
-      const result = await api.post<{ result_url: string; prompt: string }>('/images/generate', values);
+      const result = await api.post<{ result_url: string; prompt: string }>('/images/generate', {
+        model_id: modelID,
+        provider_id: providerID,
+        prompt: values.prompt,
+        width: values.width,
+        height: values.height,
+      });
       setImages((prev) => [{ url: result.result_url, prompt: result.prompt }, ...prev]);
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : '生成失败');
@@ -62,12 +69,12 @@ export default function ImagePage() {
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           <Card className="glass" style={{ width: 380, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
             <Form form={form} layout="vertical" onFinish={handleGenerate}>
-              <Form.Item name="model_id" label="模型" rules={[{ required: true }]}>
+              <Form.Item name="modelKey" label="模型" rules={[{ required: true }]}>
                 <Select
                   placeholder="选择图像生成模型"
                   options={models.map((m) => ({
-                    value: m.id,
-                    label: `${m.provider?.name ?? ''} / ${m.display_name}`,
+                    value: `${m.provider_id}:${m.model_id}`,
+                    label: `${m.provider_name} / ${m.display_name}`,
                   }))}
                 />
               </Form.Item>

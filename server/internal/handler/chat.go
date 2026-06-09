@@ -4,7 +4,6 @@ import (
 	"io"
 	"modelhub/server/internal/dto"
 	"modelhub/server/internal/middleware"
-	"modelhub/server/internal/repository"
 	"modelhub/server/internal/service"
 	"net/http"
 	"strconv"
@@ -13,17 +12,17 @@ import (
 )
 
 type ChatHandler struct {
-	chatSvc   *service.ChatService
-	modelRepo *repository.ModelRepository
+	chatSvc *service.ChatService
 }
 
-func NewChatHandler(chatSvc *service.ChatService, modelRepo *repository.ModelRepository) *ChatHandler {
-	return &ChatHandler{chatSvc: chatSvc, modelRepo: modelRepo}
+func NewChatHandler(chatSvc *service.ChatService) *ChatHandler {
+	return &ChatHandler{chatSvc: chatSvc}
 }
 
+// ListModels returns all (provider, model) combinations available for chat.
 func (h *ChatHandler) ListModels(c *gin.Context) {
 	modelType := c.Query("type")
-	models, err := h.modelRepo.FindActive(modelType)
+	models, err := h.chatSvc.ListAvailableModels(modelType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

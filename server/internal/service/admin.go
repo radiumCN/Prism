@@ -9,23 +9,26 @@ import (
 )
 
 type AdminService struct {
-	providerRepo *repository.ProviderRepository
-	modelRepo    *repository.ModelRepository
-	settingRepo  *repository.SettingRepository
-	cfg          *config.Config
+	providerRepo      *repository.ProviderRepository
+	modelRepo         *repository.ModelRepository
+	providerModelRepo *repository.ProviderModelRepository
+	settingRepo       *repository.SettingRepository
+	cfg               *config.Config
 }
 
 func NewAdminService(
 	providerRepo *repository.ProviderRepository,
 	modelRepo *repository.ModelRepository,
+	providerModelRepo *repository.ProviderModelRepository,
 	settingRepo *repository.SettingRepository,
 	cfg *config.Config,
 ) *AdminService {
 	return &AdminService{
-		providerRepo: providerRepo,
-		modelRepo:    modelRepo,
-		settingRepo:  settingRepo,
-		cfg:          cfg,
+		providerRepo:      providerRepo,
+		modelRepo:         modelRepo,
+		providerModelRepo: providerModelRepo,
+		settingRepo:       settingRepo,
+		cfg:               cfg,
 	}
 }
 
@@ -87,13 +90,14 @@ func (s *AdminService) DeleteProvider(id uint) error {
 	return s.providerRepo.Delete(id)
 }
 
+// --- Model management (no provider coupling) ---
+
 func (s *AdminService) ListModels(modelType string) ([]model.AIModel, error) {
 	return s.modelRepo.FindAll(modelType)
 }
 
 func (s *AdminService) CreateModel(req dto.UpsertModelRequest) (*model.AIModel, error) {
 	m := &model.AIModel{
-		ProviderID:       req.ProviderID,
 		ModelName:        req.ModelName,
 		DisplayName:      req.DisplayName,
 		Type:             req.Type,
@@ -122,7 +126,6 @@ func (s *AdminService) UpdateModel(id uint, req dto.UpsertModelRequest) (*model.
 		return nil, err
 	}
 
-	m.ProviderID = req.ProviderID
 	m.ModelName = req.ModelName
 	m.DisplayName = req.DisplayName
 	m.Type = req.Type
@@ -145,6 +148,20 @@ func (s *AdminService) UpdateModel(id uint, req dto.UpsertModelRequest) (*model.
 func (s *AdminService) DeleteModel(id uint) error {
 	return s.modelRepo.Delete(id)
 }
+
+// --- Provider-model association ---
+
+// GetProviderModels returns all models currently associated with a provider.
+func (s *AdminService) GetProviderModels(providerID uint) ([]model.ProviderModel, error) {
+	return s.providerModelRepo.GetByProvider(providerID)
+}
+
+// SetProviderModels replaces the model list for a provider.
+func (s *AdminService) SetProviderModels(providerID uint, req dto.SetProviderModelsRequest) error {
+	return s.providerModelRepo.SetProviderModels(providerID, req.ModelIDs)
+}
+
+// --- Settings ---
 
 func (s *AdminService) GetSettings() (map[string]string, error) {
 	return s.settingRepo.GetAll()
