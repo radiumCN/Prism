@@ -6,6 +6,12 @@ type CreateConversationRequest struct {
 	ProviderID uint   `json:"provider_id"` // optional; falls back to first active provider for the model
 }
 
+// UpdateConversationRequest supports partial updates; nil fields are left unchanged.
+type UpdateConversationRequest struct {
+	Title  *string `json:"title"`
+	Pinned *bool   `json:"pinned"`
+}
+
 type SendMessageRequest struct {
 	Content   string   `json:"content" binding:"required"`
 	ModelID   uint     `json:"model_id"`

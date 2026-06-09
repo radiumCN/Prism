@@ -21,7 +21,7 @@ func Setup(
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.Server.CORSOrigins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
@@ -50,6 +50,8 @@ func Setup(
 			conv.POST("", chatH.CreateConversation)
 			conv.GET("", chatH.ListConversations)
 			conv.GET("/:id", chatH.GetMessages)
+			conv.PATCH("/:id", chatH.UpdateConversation)
+			conv.DELETE("/:id", chatH.DeleteConversation)
 			conv.POST("/:id/messages", chatH.SendMessage)
 		}
 

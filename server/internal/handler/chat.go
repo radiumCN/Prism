@@ -57,6 +57,40 @@ func (h *ChatHandler) ListConversations(c *gin.Context) {
 	c.JSON(http.StatusOK, convs)
 }
 
+func (h *ChatHandler) UpdateConversation(c *gin.Context) {
+	var req dto.UpdateConversationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	userID := middleware.GetUserID(c)
+	convID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid conversation id"})
+		return
+	}
+	conv, err := h.chatSvc.UpdateConversation(userID, uint(convID), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, conv)
+}
+
+func (h *ChatHandler) DeleteConversation(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	convID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid conversation id"})
+		return
+	}
+	if err := h.chatSvc.DeleteConversation(userID, uint(convID)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusNoContent, nil)
+}
+
 func (h *ChatHandler) GetMessages(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	convID, err := strconv.ParseUint(c.Param("id"), 10, 64)

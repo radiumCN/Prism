@@ -76,6 +76,7 @@ type Conversation struct {
 	Title      string    `gorm:"size:500" json:"title"`
 	ModelID    uint      `gorm:"index" json:"model_id"`
 	ProviderID uint      `gorm:"index" json:"provider_id"`
+	Pinned     bool      `gorm:"default:false" json:"pinned"`
 	Model      *AIModel  `gorm:"foreignKey:ModelID" json:"model,omitempty"`
 	Provider   *Provider `gorm:"foreignKey:ProviderID" json:"provider,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`

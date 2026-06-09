@@ -59,6 +59,7 @@ export interface Conversation {
   title: string;
   model_id: number;
   provider_id: number;
+  pinned: boolean;
   created_at: string;
   updated_at: string;
 }

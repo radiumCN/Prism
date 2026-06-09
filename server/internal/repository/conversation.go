@@ -20,7 +20,7 @@ func (r *ConversationRepository) Create(c *model.Conversation) error {
 
 func (r *ConversationRepository) FindByUser(userID uint) ([]model.Conversation, error) {
 	var conversations []model.Conversation
-	err := r.db.Where("user_id = ?", userID).Order("updated_at DESC").Find(&conversations).Error
+	err := r.db.Where("user_id = ?", userID).Order("pinned DESC, updated_at DESC").Find(&conversations).Error
 	return conversations, err
 }
 
@@ -38,6 +38,13 @@ func (r *ConversationRepository) FindByID(id, userID uint) (*model.Conversation,
 
 func (r *ConversationRepository) UpdateTitle(id uint, title string) error {
 	return r.db.Model(&model.Conversation{}).Where("id = ?", id).Update("title", title).Error
+}
+
+// Update applies a partial update (title, pinned, etc.) scoped to the owning user.
+func (r *ConversationRepository) Update(id, userID uint, updates map[string]interface{}) error {
+	return r.db.Model(&model.Conversation{}).
+		Where("id = ? AND user_id = ?", id, userID).
+		Updates(updates).Error
 }
 
 func (r *ConversationRepository) Delete(id, userID uint) error {

@@ -71,6 +71,31 @@ func (s *ChatService) ListConversations(userID uint) ([]model.Conversation, erro
 	return s.convRepo.FindByUser(userID)
 }
 
+func (s *ChatService) UpdateConversation(userID, convID uint, req dto.UpdateConversationRequest) (*model.Conversation, error) {
+	updates := make(map[string]interface{})
+	if req.Title != nil {
+		t := strings.TrimSpace(*req.Title)
+		if t == "" {
+			return nil, errors.New("title cannot be empty")
+		}
+		updates["title"] = t
+	}
+	if req.Pinned != nil {
+		updates["pinned"] = *req.Pinned
+	}
+	if len(updates) == 0 {
+		return nil, errors.New("nothing to update")
+	}
+	if err := s.convRepo.Update(convID, userID, updates); err != nil {
+		return nil, err
+	}
+	return s.convRepo.FindByID(convID, userID)
+}
+
+func (s *ChatService) DeleteConversation(userID, convID uint) error {
+	return s.convRepo.Delete(convID, userID)
+}
+
 func (s *ChatService) GetMessages(userID, convID uint) ([]model.Message, error) {
 	conv, err := s.convRepo.FindByID(convID, userID)
 	if err != nil {
