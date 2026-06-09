@@ -2,16 +2,24 @@ package adapter
 
 import "fmt"
 
-func NewChatAdapter(providerName, apiKey, baseURL string) (ChatAdapter, error) {
-	switch providerName {
-	case "openai":
+// NewChatAdapter selects the right adapter based on the model's api_format.
+//
+// Supported values (see model.APIFormat* constants):
+//   - "openai_chat"         → OpenAI Chat Completions (/v1/chat/completions)
+//   - "openai_responses"    → OpenAI Responses API (/v1/responses) — uses OpenAI adapter for now
+//   - "anthropic_messages"  → Anthropic Messages API (/v1/messages)
+//   - "gemini_generate"     → Gemini generateContent
+//   - ""                    → defaults to openai_chat
+func NewChatAdapter(apiFormat, apiKey, baseURL string) (ChatAdapter, error) {
+	switch apiFormat {
+	case "openai_chat", "openai_responses", "":
 		return NewOpenAIAdapter(apiKey, baseURL), nil
-	case "claude", "anthropic":
+	case "anthropic_messages":
 		return NewClaudeAdapter(apiKey, baseURL), nil
-	case "gemini", "google":
+	case "gemini_generate":
 		return NewGeminiAdapter(apiKey, baseURL), nil
 	default:
-		return nil, fmt.Errorf("unsupported chat provider: %s", providerName)
+		return nil, fmt.Errorf("unsupported api_format: %q", apiFormat)
 	}
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Bubble,
   Sender,
@@ -9,8 +9,12 @@ import {
   type PromptsProps,
 } from '@ant-design/x';
 import { useXChat } from '@ant-design/x-sdk';
-import { Avatar, Select, Typography, Spin, theme } from 'antd';
-import { RobotOutlined, UserOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { XMarkdown } from '@ant-design/x-markdown';
+import { Avatar, Select, Typography, Spin, Tooltip, Button, message as antMessage, theme } from 'antd';
+import {
+  RobotOutlined, UserOutlined, ThunderboltOutlined,
+  CopyOutlined, EditOutlined,
+} from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { createChatProvider, type ChatMessage } from '@/lib/chatProvider';
@@ -36,6 +40,10 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // Controlled sender value — lets us clear the box programmatically
+  const [senderValue, setSenderValue] = useState('');
+  // id of the user message being edited; null means normal send
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Holds a message typed/clicked before a conversation existed; sent once provider is ready.
   const pendingMessageRef = useRef<string | null>(null);
@@ -47,13 +55,13 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
   const selectedModelRef = useRef(selectedModel);
   selectedModelRef.current = selectedModel;
 
-  // Re-create provider whenever conversationId or token changes.
-  // Guard: return null if either is missing so we never send "Bearer ".
+  // Provider only depends on conversationId; token is read from localStorage
+  // inside the middleware on every request so it's always fresh.
   const provider = useMemo(() => {
-    if (!conversationId || !accessToken) return null;
-    return createChatProvider(conversationId, accessToken, selectedModel?.model_id);
+    if (!conversationId) return null;
+    return createChatProvider(conversationId, selectedModel?.model_id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, accessToken]);
+  }, [conversationId]);
 
   const { messages, onRequest, isRequesting, abort, setMessages } = useXChat({
     provider: provider!,
@@ -78,14 +86,15 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When conversationId + provider become ready, flush any pending message
+  // When conversationId + provider + a valid token are all ready, flush any pending message.
   useEffect(() => {
-    if (conversationId && provider && pendingMessageRef.current) {
+    if (conversationId && provider && accessToken && pendingMessageRef.current) {
       const content = pendingMessageRef.current;
       pendingMessageRef.current = null;
       onRequestRef.current?.({ content, modelId: selectedModelRef.current?.model_id });
     }
-  }, [conversationId, provider]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, provider, accessToken]);
 
   // Load history when conversation changes.
   // Skip for newly-created conversations: they have no history and loading would
@@ -118,6 +127,22 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
   const handleSubmit = async (content: string) => {
     if (!content.trim()) return;
 
+    // Clear the input box immediately
+    setSenderValue('');
+
+    // Edit mode: truncate messages at the editing point and re-send
+    if (editingId !== null) {
+      const idx = messages.findIndex((m) => m.id === editingId);
+      if (idx >= 0) {
+        setMessages(
+          messages.slice(0, idx).map((m) => ({ ...m, status: 'success' as const }))
+        );
+      }
+      setEditingId(null);
+      onRequest({ content, modelId: selectedModel?.model_id });
+      return;
+    }
+
     if (!conversationId) {
       const model = selectedModel ?? models[0];
       if (!model) return;
@@ -141,6 +166,14 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
 
     onRequest({ content, modelId: selectedModel?.model_id });
   };
+
+  const handleCopy = useCallback((text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      antMessage.success('已复制', 1.5);
+    }).catch(() => {
+      antMessage.error('复制失败');
+    });
+  }, []);
 
   const handlePromptClick: PromptsProps['onItemClick'] = (info) => {
     handleSubmit(info.data.label as string);
@@ -219,19 +252,61 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
                 avatar: (
                   <Avatar icon={<UserOutlined />} style={{ background: '#7c3aed' }} />
                 ),
+                contentRender(content: { msg: ChatMessage; status: string }) {
+                  return <span style={{ whiteSpace: 'pre-wrap' }}>{content.msg.content}</span>;
+                },
               },
               assistant: {
                 placement: 'start',
                 avatar: (
                   <Avatar icon={<RobotOutlined />} style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }} />
                 ),
+                contentRender(content: { msg: ChatMessage; status: string }) {
+                  const isStreaming = content.status === 'loading' || content.status === 'updating';
+                  return (
+                    <XMarkdown
+                      content={content.msg.content || ''}
+                      streaming={{ hasNextChunk: isStreaming, enableAnimation: true }}
+                    />
+                  );
+                },
               },
             }}
             items={messages.map(({ id, message, status }) => ({
               key: id,
               role: message.role,
-              content: message.content,
+              content: { msg: message, status } as { msg: ChatMessage; status: string },
               loading: status === 'loading',
+              footer: status !== 'loading' && status !== 'updating' ? (
+                <div style={{ display: 'flex', gap: 2, marginTop: 4, justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <Tooltip title="复制">
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={<CopyOutlined />}
+                      style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}
+                      onClick={() => handleCopy(message.content)}
+                    />
+                  </Tooltip>
+                  {message.role === 'user' && (
+                    <Tooltip title="编辑并重新发送">
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<EditOutlined />}
+                        style={{
+                          color: editingId === id ? token.colorPrimary : 'rgba(255,255,255,0.35)',
+                          fontSize: 12,
+                        }}
+                        onClick={() => {
+                          setSenderValue(message.content);
+                          setEditingId(id as number);
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                </div>
+              ) : undefined,
             }))}
           />
         )}
@@ -239,14 +314,30 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
 
       {/* Sender */}
       <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        {editingId !== null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <EditOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
+            <Text style={{ color: token.colorPrimary, fontSize: 12 }}>编辑模式：修改后发送将替换该消息及后续回复</Text>
+            <Button
+              size="small"
+              type="text"
+              style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 'auto' }}
+              onClick={() => { setEditingId(null); setSenderValue(''); }}
+            >
+              取消
+            </Button>
+          </div>
+        )}
         <Sender
+          value={senderValue}
+          onChange={setSenderValue}
           loading={isRequesting}
           onSubmit={handleSubmit}
           onCancel={abort}
           placeholder="输入消息，Shift+Enter 换行，Enter 发送"
           style={{
             background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            border: `1px solid ${editingId !== null ? token.colorPrimary : 'rgba(255,255,255,0.12)'}`,
             borderRadius: 12,
           }}
         />

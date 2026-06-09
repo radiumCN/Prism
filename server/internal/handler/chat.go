@@ -2,6 +2,7 @@ package handler
 
 import (
 	"io"
+	"log"
 	"modelhub/server/internal/dto"
 	"modelhub/server/internal/middleware"
 	"modelhub/server/internal/service"
@@ -107,6 +108,9 @@ func (h *ChatHandler) sendMessageStream(c *gin.Context, userID, convID uint, req
 
 	streamCh, err := h.chatSvc.SendMessageStream(c.Request.Context(), userID, convID, req)
 	if err != nil {
+		// #region agent log
+		log.Printf("[SSE ERROR] convID=%d userID=%d err=%v", convID, userID, err)
+		// #endregion
 		c.SSEvent("error", gin.H{"error": err.Error()})
 		return
 	}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import '@ant-design/x-markdown/themes/dark.css';
 import { AntdProvider } from '@/components/Layout/AntdProvider';
 
 export const metadata: Metadata = {

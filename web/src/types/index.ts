@@ -17,6 +17,8 @@ export interface AIModel {
   model_name: string;
   display_name: string;
   type: 'chat' | 'image' | 'video';
+  /** API endpoint format: openai_chat | openai_responses | anthropic_messages | gemini_generate */
+  api_format: string;
   max_tokens: number;
   supports_streaming: boolean;
   supports_vision: boolean;

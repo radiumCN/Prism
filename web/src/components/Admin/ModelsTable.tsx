@@ -12,6 +12,20 @@ const MODEL_TYPES = [
   { value: 'video', label: '视频生成' },
 ];
 
+const API_FORMATS = [
+  { value: 'openai_chat',         label: 'OpenAI Chat Completions  (/v1/chat/completions)' },
+  { value: 'openai_responses',    label: 'OpenAI Responses API  (/v1/responses)' },
+  { value: 'anthropic_messages',  label: 'Anthropic Messages  (/v1/messages)' },
+  { value: 'gemini_generate',     label: 'Gemini generateContent  (/v1beta/models/…:generateContent)' },
+];
+
+const API_FORMAT_TAG: Record<string, { color: string; short: string }> = {
+  openai_chat:        { color: 'blue',   short: 'OAI Chat' },
+  openai_responses:   { color: 'cyan',   short: 'OAI Resp' },
+  anthropic_messages: { color: 'orange', short: 'Anthropic' },
+  gemini_generate:    { color: 'green',  short: 'Gemini' },
+};
+
 export default function ModelsTable() {
   const [models, setModels] = useState<AIModel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,7 +82,7 @@ export default function ModelsTable() {
   const openCreate = () => {
     setEditingModel(null);
     form.resetFields();
-    form.setFieldsValue({ status: 'active', type: 'chat', max_tokens: 4096, supports_streaming: true });
+    form.setFieldsValue({ status: 'active', type: 'chat', api_format: 'openai_chat', max_tokens: 4096, supports_streaming: true });
     setModalOpen(true);
   };
 
@@ -104,12 +118,22 @@ export default function ModelsTable() {
             title: '类型',
             dataIndex: 'type',
             key: 'type',
-            width: 100,
+            width: 80,
             render: (v) => (
               <Tag color={v === 'chat' ? 'blue' : v === 'image' ? 'purple' : 'orange'}>
                 {MODEL_TYPES.find((t) => t.value === v)?.label ?? v}
               </Tag>
             ),
+          },
+          {
+            title: 'API 格式',
+            dataIndex: 'api_format',
+            key: 'api_format',
+            width: 110,
+            render: (v: string) => {
+              const fmt = API_FORMAT_TAG[v] ?? { color: 'default', short: v || 'openai_chat' };
+              return <Tag color={fmt.color}>{fmt.short}</Tag>;
+            },
           },
           { title: 'Max Tokens', dataIndex: 'max_tokens', key: 'max_tokens', width: 110 },
           {
@@ -175,6 +199,13 @@ export default function ModelsTable() {
           </Form.Item>
           <Form.Item name="type" label="类型" rules={[{ required: true }]}>
             <Select options={MODEL_TYPES} />
+          </Form.Item>
+          <Form.Item
+            name="api_format"
+            label="API 格式"
+            tooltip="决定对话时走哪个 HTTP 端点协议。OpenAI 兼容网关（new-api / one-api 等）选 OpenAI Chat Completions。"
+          >
+            <Select options={API_FORMATS} />
           </Form.Item>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Form.Item name="max_tokens" label="最大 Token 数">

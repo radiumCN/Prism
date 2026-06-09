@@ -13,8 +13,18 @@ interface ChatInput {
   stream?: boolean;
 }
 
+// XRequest's default SSE separator parsing produces this shape for Gin SSEvent output.
+// Gin sends:  event: message\ndata: {"content":"..."}\n\n
+// XRequest produces: { event: "message", data: '{"content":"..."}' }
 interface ChatOutput {
-  content: string;
+  content?: string;
+  event?: string;
+  data?: string;
+}
+
+function getAccessToken(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('access_token') || '';
 }
 
 export class ModelHubChatProvider extends AbstractChatProvider<ChatMessage, ChatInput, ChatOutput> {
@@ -41,29 +51,56 @@ export class ModelHubChatProvider extends AbstractChatProvider<ChatMessage, Chat
   transformMessage(info: TransformMessage<ChatMessage, ChatOutput>): ChatMessage {
     const { originMessage, chunk } = info;
 
-    if (!chunk?.content || chunk.content === '[DONE]') {
+    // XRequest default SSE parsing gives: { event: "message", data: '{"content":"..."}' }
+    // for Gin's SSEvent format. Extract the actual text content from the data field.
+    let text = chunk?.content;
+    if (!text && chunk?.event === 'message' && chunk?.data) {
+      try {
+        const parsed = JSON.parse(chunk.data) as { content?: string };
+        text = parsed.content;
+      } catch { /* ignore malformed */ }
+    }
+    // Also handle error events so the user sees the error message instead of a frozen spinner.
+    if (!text && chunk?.event === 'error' && chunk?.data) {
+      try {
+        const parsed = JSON.parse(chunk.data) as { error?: string };
+        if (parsed.error) text = `[错误] ${parsed.error}`;
+      } catch { /* ignore */ }
+    }
+
+    if (!text || text === '[DONE]') {
       return { ...(originMessage || { content: '', role: 'assistant' }) };
     }
 
     return {
-      content: `${originMessage?.content || ''}${chunk.content}`,
+      content: `${originMessage?.content || ''}${text}`,
       role: 'assistant',
     };
   }
 }
 
-export function createChatProvider(conversationId: number, accessToken: string, modelId?: number) {
-  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api');
+export function createChatProvider(conversationId: number, modelId?: number) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
   const url = `${baseUrl}/conversations/${conversationId}/messages`;
-  // Fall back to localStorage in case the Zustand store hasn't rehydrated yet
-  const token = accessToken || (typeof window !== 'undefined' ? localStorage.getItem('access_token') || '' : '');
 
   return new ModelHubChatProvider({
     request: XRequest<ChatInput, ChatOutput>(url, {
       manual: true,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+      middlewares: {
+        onRequest: async (...args) => {
+          const [fetchUrl, init] = args;
+          const tok = getAccessToken();
+          return [
+            fetchUrl,
+            {
+              ...(init || {}),
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${tok}`,
+              },
+            },
+          ];
+        },
       },
       params: {
         conversationId,

@@ -89,12 +89,14 @@ func (s *ChatService) resolveProvider(modelID, providerID uint) (*model.Provider
 	return s.providerModelRepo.FindFirstActiveProviderForModel(modelID)
 }
 
-func (s *ChatService) getAdapterForProvider(provider *model.Provider) (adapter.ChatAdapter, error) {
+// getAdapter creates a ChatAdapter using the model's declared api_format and the
+// provider's credentials. apiFormat is model.APIFormat (e.g. "openai_chat").
+func (s *ChatService) getAdapter(apiFormat string, provider *model.Provider) (adapter.ChatAdapter, error) {
 	apiKey, err := utils.DecryptAES(s.cfg.AES.Key, provider.APIKey)
 	if err != nil {
 		apiKey = provider.APIKey
 	}
-	return adapter.NewChatAdapter(provider.Name, apiKey, provider.BaseURL)
+	return adapter.NewChatAdapter(apiFormat, apiKey, provider.BaseURL)
 }
 
 func (s *ChatService) buildAdapterMessages(history []model.Message, newContent string, imageURLs []string) []adapter.Message {
@@ -177,7 +179,7 @@ func (s *ChatService) SendMessageStream(ctx context.Context, userID, convID uint
 		return nil, fmt.Errorf("no provider available for this model: %w", err)
 	}
 
-	chatAdapter, err := s.getAdapterForProvider(provider)
+	chatAdapter, err := s.getAdapter(aiModel.APIFormat, provider)
 	if err != nil {
 		return nil, fmt.Errorf("adapter error: %w", err)
 	}
@@ -270,9 +272,9 @@ func (s *ChatService) SendMessage(ctx context.Context, userID, convID uint, req 
 		return nil, fmt.Errorf("no provider available for this model: %w", err)
 	}
 
-	chatAdapter, err := s.getAdapterForProvider(provider)
+	chatAdapter, err := s.getAdapter(aiModel.APIFormat, provider)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("adapter error: %w", err)
 	}
 
 	history, err := s.msgRepo.FindByConversation(convID)

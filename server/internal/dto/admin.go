@@ -13,6 +13,9 @@ type UpsertModelRequest struct {
 	ModelName        string `json:"model_name" binding:"required,max=100"`
 	DisplayName      string `json:"display_name" binding:"required,max=200"`
 	Type             string `json:"type" binding:"required,oneof=chat image video"`
+	// APIFormat controls which HTTP endpoint/protocol is used for this model.
+	// Valid values: openai_chat | openai_responses | anthropic_messages | gemini_generate
+	APIFormat        string `json:"api_format"`
 	MaxTokens        int    `json:"max_tokens"`
 	SupportsStreaming bool   `json:"supports_streaming"`
 	SupportsVision   bool   `json:"supports_vision"`

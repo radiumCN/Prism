@@ -31,6 +31,14 @@ type Provider struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// APIFormat values for AIModel.APIFormat.
+const (
+	APIFormatOpenAIChat        = "openai_chat"         // POST /v1/chat/completions
+	APIFormatOpenAIResponses   = "openai_responses"    // POST /v1/responses
+	APIFormatAnthropicMessages = "anthropic_messages"  // POST /v1/messages
+	APIFormatGeminiGenerate    = "gemini_generate"     // POST /v1beta/models/:model:generateContent
+)
+
 // AIModel holds the definition of a model, independent of any provider.
 // One model can be associated with multiple providers via ProviderModel.
 type AIModel struct {
@@ -38,6 +46,9 @@ type AIModel struct {
 	ModelName        string    `gorm:"uniqueIndex;size:100;not null" json:"model_name"`
 	DisplayName      string    `gorm:"size:200" json:"display_name"`
 	Type             string    `gorm:"size:20;default:'chat'" json:"type"`
+	// APIFormat determines which HTTP endpoint format to use for this model.
+	// Valid values: openai_chat | openai_responses | anthropic_messages | gemini_generate
+	APIFormat        string    `gorm:"size:30;default:'openai_chat'" json:"api_format"`
 	MaxTokens        int       `gorm:"default:4096" json:"max_tokens"`
 	SupportsStreaming bool      `gorm:"default:true" json:"supports_streaming"`
 	SupportsVision   bool      `gorm:"default:false" json:"supports_vision"`

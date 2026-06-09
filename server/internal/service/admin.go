@@ -101,11 +101,15 @@ func (s *AdminService) CreateModel(req dto.UpsertModelRequest) (*model.AIModel, 
 		ModelName:        req.ModelName,
 		DisplayName:      req.DisplayName,
 		Type:             req.Type,
+		APIFormat:        req.APIFormat,
 		MaxTokens:        req.MaxTokens,
 		SupportsStreaming: req.SupportsStreaming,
 		SupportsVision:   req.SupportsVision,
 		ConfigJSON:       req.ConfigJSON,
 		Status:           req.Status,
+	}
+	if m.APIFormat == "" {
+		m.APIFormat = "openai_chat"
 	}
 	if m.MaxTokens == 0 {
 		m.MaxTokens = 4096
@@ -129,6 +133,9 @@ func (s *AdminService) UpdateModel(id uint, req dto.UpsertModelRequest) (*model.
 	m.ModelName = req.ModelName
 	m.DisplayName = req.DisplayName
 	m.Type = req.Type
+	if req.APIFormat != "" {
+		m.APIFormat = req.APIFormat
+	}
 	m.SupportsStreaming = req.SupportsStreaming
 	m.SupportsVision = req.SupportsVision
 	m.ConfigJSON = req.ConfigJSON
