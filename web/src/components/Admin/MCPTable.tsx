@@ -725,7 +725,7 @@ export default function MCPTable() {
                   borderRadius: 10,
                   cursor: 'default',
                 }}
-                bodyStyle={{ padding: '12px 14px' }}
+                styles={{ body: { padding: '12px 14px' } }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{item.icon}</span>
