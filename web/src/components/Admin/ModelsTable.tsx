@@ -19,6 +19,7 @@ const API_FORMATS = [
   { value: 'gemini_generate',     label: 'Gemini generateContent  (/v1beta/models/…:generateContent)' },
   { value: 'openai_image',        label: 'OpenAI Images  (/v1/images/generations)  — DALL-E' },
   { value: 'gemini_image',        label: 'Gemini Imagen  (Google 图像生成)' },
+  { value: 'alibailian_video',    label: 'Alibaba Bailian 视频生成  — happyhorse 系列' },
 ];
 
 const API_FORMAT_TAG: Record<string, { color: string; short: string }> = {
@@ -28,6 +29,7 @@ const API_FORMAT_TAG: Record<string, { color: string; short: string }> = {
   gemini_generate:    { color: 'green',   short: 'Gemini' },
   openai_image:       { color: 'magenta', short: 'DALL-E' },
   gemini_image:       { color: 'lime',    short: 'Imagen' },
+  alibailian_video:   { color: 'gold',    short: '视频生成' },
 };
 
 export default function ModelsTable() {

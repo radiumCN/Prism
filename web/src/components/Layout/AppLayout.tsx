@@ -5,6 +5,7 @@ import { Layout, Menu, Avatar, Dropdown, Typography } from 'antd';
 import {
   MessageOutlined,
   PictureOutlined,
+  VideoCameraOutlined,
   SettingOutlined,
   LogoutOutlined,
   UserOutlined,
@@ -49,6 +50,12 @@ export default function AppLayout({ children, sidebar }: Props) {
       icon: <PictureOutlined />,
       label: '绘图',
       onClick: () => router.push('/image'),
+    },
+    {
+      key: '/video',
+      icon: <VideoCameraOutlined />,
+      label: '视频',
+      onClick: () => router.push('/video'),
     },
     ...(isAdmin
       ? [

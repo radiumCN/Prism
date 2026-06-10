@@ -57,5 +57,18 @@ type GenerateVideoRequest struct {
 	ModelID    uint   `json:"model_id" binding:"required"`
 	ProviderID uint   `json:"provider_id"`
 	Prompt     string `json:"prompt" binding:"required"`
-	Duration   int    `json:"duration"`
+	// Common parameters
+	Resolution string `json:"resolution"` // 1080P | 720P
+	Watermark  *bool  `json:"watermark"`  // default true per API; false = no watermark
+	// t2v / r2v only
+	Ratio    string `json:"ratio"`    // 16:9 | 9:16 | 1:1 | 4:3 | 3:4
+	Duration int    `json:"duration"` // 3-15 seconds; 0 = default (5)
+	// video-edit only
+	AudioSetting string `json:"audio_setting"` // auto | origin
+	// i2v: single first-frame image
+	ImageURL string `json:"image_url"`
+	// r2v (1-9 images) / video-edit (0-5 images)
+	ReferenceImages []string `json:"reference_images"`
+	// video-edit: source video
+	VideoURL string `json:"video_url"`
 }

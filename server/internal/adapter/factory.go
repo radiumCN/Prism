@@ -23,6 +23,16 @@ func NewChatAdapter(apiFormat, apiKey, baseURL string) (ChatAdapter, error) {
 	}
 }
 
+// NewVideoAdapter selects the right video adapter based on apiFormat.
+func NewVideoAdapter(apiFormat, apiKey, baseURL string) (VideoAdapter, error) {
+	switch apiFormat {
+	case "alibailian_video":
+		return NewHappyhorseAdapter(apiKey, baseURL), nil
+	default:
+		return nil, fmt.Errorf("unsupported video api_format: %q", apiFormat)
+	}
+}
+
 // NewImageAdapter selects the right image adapter.
 // apiFormat takes precedence; if empty, falls back to providerName heuristic.
 func NewImageAdapter(apiFormat, providerName, apiKey, baseURL string) (ImageAdapter, error) {
