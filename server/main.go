@@ -48,11 +48,13 @@ func main() {
 	convRepo := repository.NewConversationRepository(db)
 	msgRepo := repository.NewMessageRepository(db)
 	settingRepo := repository.NewSettingRepository(db)
+	skillRepo := repository.NewSkillRepository(db)
+	mcpRepo := repository.NewMCPServerRepository(db)
 
 	// Services
 	authSvc := service.NewAuthService(userRepo, rdb, cfg)
-	chatSvc := service.NewChatService(convRepo, msgRepo, modelRepo, providerRepo, providerModelRepo, cfg)
-	adminSvc := service.NewAdminService(providerRepo, modelRepo, providerModelRepo, settingRepo, cfg)
+	chatSvc := service.NewChatService(convRepo, msgRepo, modelRepo, providerRepo, providerModelRepo, skillRepo, mcpRepo, cfg)
+	adminSvc := service.NewAdminService(providerRepo, modelRepo, providerModelRepo, settingRepo, skillRepo, mcpRepo, cfg)
 
 	// Handlers
 	authH := handler.NewAuthHandler(authSvc)

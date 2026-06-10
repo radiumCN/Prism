@@ -20,6 +20,37 @@ func NewChatHandler(chatSvc *service.ChatService) *ChatHandler {
 	return &ChatHandler{chatSvc: chatSvc}
 }
 
+// ListSkills returns active skills visible to all authenticated users.
+func (h *ChatHandler) ListSkills(c *gin.Context) {
+	skills, err := h.chatSvc.ListSkills()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, skills)
+}
+
+// ListMCPServers returns active MCP server configs visible to all authenticated users.
+func (h *ChatHandler) ListMCPServers(c *gin.Context) {
+	servers, err := h.chatSvc.ListMCPServers()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// Strip auth headers before returning
+	type safe struct {
+		ID          uint   `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Status      string `json:"status"`
+	}
+	out := make([]safe, 0, len(servers))
+	for _, s := range servers {
+		out = append(out, safe{ID: s.ID, Name: s.Name, Description: s.Description, Status: s.Status})
+	}
+	c.JSON(http.StatusOK, out)
+}
+
 // ListModels returns all (provider, model) combinations available for chat.
 func (h *ChatHandler) ListModels(c *gin.Context) {
 	modelType := c.Query("type")

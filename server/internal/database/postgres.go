@@ -34,6 +34,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.Provider{},
 		&model.AIModel{},
 		&model.ProviderModel{},
+		&model.Skill{},
+		&model.MCPServer{},
 		&model.Conversation{},
 		&model.Message{},
 		&model.Generation{},

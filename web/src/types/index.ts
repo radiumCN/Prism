@@ -54,12 +54,32 @@ export interface Provider {
   status: string;
 }
 
+export interface Skill {
+  id: number;
+  name: string;
+  description: string;
+  system_prompt: string;
+  icon: string;
+  status: string;
+}
+
+export interface MCPServer {
+  id: number;
+  name: string;
+  description: string;
+  url?: string;
+  has_auth?: boolean;
+  status: string;
+}
+
 export interface Conversation {
   id: number;
   title: string;
   model_id: number;
   provider_id: number;
   pinned: boolean;
+  skill_ids?: string;      // JSON array
+  mcp_server_ids?: string; // JSON array
   created_at: string;
   updated_at: string;
 }

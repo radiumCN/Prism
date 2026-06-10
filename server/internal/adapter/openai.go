@@ -28,9 +28,32 @@ func NewOpenAIAdapter(apiKey, baseURL string) *OpenAIAdapter {
 	}
 }
 
+// --- internal wire types ---
+
+type openAIToolCallDelta struct {
+	Index    int    `json:"index"`
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
+}
+
 type openAIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role       string               `json:"role"`
+	Content    interface{}          `json:"content"` // string or null
+	ToolCalls  []openAIToolCallWire `json:"tool_calls,omitempty"`
+	ToolCallID string               `json:"tool_call_id,omitempty"`
+}
+
+type openAIToolCallWire struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
 }
 
 type openAIRequest struct {
@@ -39,15 +62,18 @@ type openAIRequest struct {
 	MaxTokens   int             `json:"max_tokens,omitempty"`
 	Temperature *float64        `json:"temperature,omitempty"`
 	Stream      bool            `json:"stream"`
+	Tools       []Tool          `json:"tools,omitempty"`
 }
 
 type openAIResponse struct {
 	Choices []struct {
 		Message struct {
-			Content string `json:"content"`
+			Content   interface{}          `json:"content"`
+			ToolCalls []openAIToolCallWire `json:"tool_calls"`
 		} `json:"message"`
 		Delta struct {
-			Content string `json:"content"`
+			Content   string                `json:"content"`
+			ToolCalls []openAIToolCallDelta `json:"tool_calls"`
 		} `json:"delta"`
 		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
@@ -59,9 +85,56 @@ type openAIResponse struct {
 func (a *OpenAIAdapter) buildMessages(messages []Message) []openAIMessage {
 	out := make([]openAIMessage, 0, len(messages))
 	for _, m := range messages {
-		out = append(out, openAIMessage{Role: m.Role, Content: m.Content})
+		msg := openAIMessage{
+			Role:       m.Role,
+			Content:    m.Content,
+			ToolCallID: m.ToolCallID,
+		}
+		if len(m.ToolCalls) > 0 {
+			msg.Content = nil
+			for _, tc := range m.ToolCalls {
+				msg.ToolCalls = append(msg.ToolCalls, openAIToolCallWire{
+					ID:   tc.ID,
+					Type: tc.Type,
+					Function: struct {
+						Name      string `json:"name"`
+						Arguments string `json:"arguments"`
+					}{Name: tc.Function.Name, Arguments: tc.Function.Arguments},
+				})
+			}
+		}
+		out = append(out, msg)
 	}
 	return out
+}
+
+func wireToAdapterToolCalls(wire []openAIToolCallWire) []ToolCall {
+	out := make([]ToolCall, 0, len(wire))
+	for _, w := range wire {
+		out = append(out, ToolCall{
+			ID:   w.ID,
+			Type: w.Type,
+			Function: ToolCallFunc{
+				Name:      w.Function.Name,
+				Arguments: w.Function.Arguments,
+			},
+		})
+	}
+	return out
+}
+
+func (a *OpenAIAdapter) doRequest(ctx context.Context, reqBody openAIRequest) (*http.Response, error) {
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, "POST", a.BaseURL+"/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+a.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+	return a.client.Do(req)
 }
 
 func (a *OpenAIAdapter) ChatCompletion(ctx context.Context, model string, messages []Message, options ChatOptions) (ChatResponse, error) {
@@ -71,21 +144,10 @@ func (a *OpenAIAdapter) ChatCompletion(ctx context.Context, model string, messag
 		Temperature: options.Temperature,
 		MaxTokens:   options.MaxTokens,
 		Stream:      false,
+		Tools:       options.Tools,
 	}
 
-	body, err := json.Marshal(reqBody)
-	if err != nil {
-		return ChatResponse{}, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", a.BaseURL+"/chat/completions", bytes.NewReader(body))
-	if err != nil {
-		return ChatResponse{}, err
-	}
-	req.Header.Set("Authorization", "Bearer "+a.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := a.client.Do(req)
+	resp, err := a.doRequest(ctx, reqBody)
 	if err != nil {
 		return ChatResponse{}, err
 	}
@@ -101,9 +163,21 @@ func (a *OpenAIAdapter) ChatCompletion(ctx context.Context, model string, messag
 		return ChatResponse{}, err
 	}
 
+	if len(result.Choices) == 0 {
+		return ChatResponse{}, nil
+	}
+
+	choice := result.Choices[0]
+	if choice.FinishReason == "tool_calls" {
+		return ChatResponse{
+			ToolCalls:  wireToAdapterToolCalls(choice.Message.ToolCalls),
+			TokenCount: result.Usage.TotalTokens,
+		}, nil
+	}
+
 	content := ""
-	if len(result.Choices) > 0 {
-		content = result.Choices[0].Message.Content
+	if s, ok := choice.Message.Content.(string); ok {
+		content = s
 	}
 	return ChatResponse{Content: content, TokenCount: result.Usage.TotalTokens}, nil
 }
@@ -115,21 +189,10 @@ func (a *OpenAIAdapter) ChatCompletionStream(ctx context.Context, model string, 
 		Temperature: options.Temperature,
 		MaxTokens:   options.MaxTokens,
 		Stream:      true,
+		Tools:       options.Tools,
 	}
 
-	body, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", a.BaseURL+"/chat/completions", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+a.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := a.client.Do(req)
+	resp, err := a.doRequest(ctx, reqBody)
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +207,15 @@ func (a *OpenAIAdapter) ChatCompletionStream(ctx context.Context, model string, 
 	go func() {
 		defer resp.Body.Close()
 		defer close(ch)
+
+		// Accumulate tool call deltas by index
+		type tcAccum struct {
+			id        string
+			typ       string
+			name      string
+			arguments strings.Builder
+		}
+		accum := map[int]*tcAccum{}
 
 		scanner := bufio.NewScanner(resp.Body)
 		for scanner.Scan() {
@@ -161,19 +233,60 @@ func (a *OpenAIAdapter) ChatCompletionStream(ctx context.Context, model string, 
 			if err := json.Unmarshal([]byte(data), &result); err != nil {
 				continue
 			}
-			if len(result.Choices) > 0 {
-				content := result.Choices[0].Delta.Content
-				if content != "" {
-					select {
-					case ch <- ChatStreamChunk{Content: content}:
-					case <-ctx.Done():
-						return
-					}
+			if len(result.Choices) == 0 {
+				continue
+			}
+			choice := result.Choices[0]
+
+			// Accumulate tool call fragments
+			for _, tc := range choice.Delta.ToolCalls {
+				a, ok := accum[tc.Index]
+				if !ok {
+					a = &tcAccum{}
+					accum[tc.Index] = a
 				}
-				if result.Choices[0].FinishReason == "stop" {
-					ch <- ChatStreamChunk{Done: true}
+				if tc.ID != "" {
+					a.id = tc.ID
+				}
+				if tc.Type != "" {
+					a.typ = tc.Type
+				}
+				if tc.Function.Name != "" {
+					a.name += tc.Function.Name
+				}
+				if tc.Function.Arguments != "" {
+					a.arguments.WriteString(tc.Function.Arguments)
+				}
+			}
+
+			// Stream content delta
+			if choice.Delta.Content != "" {
+				select {
+				case ch <- ChatStreamChunk{Content: choice.Delta.Content}:
+				case <-ctx.Done():
 					return
 				}
+			}
+
+			switch choice.FinishReason {
+			case "stop":
+				ch <- ChatStreamChunk{Done: true}
+				return
+			case "tool_calls":
+				toolCalls := make([]ToolCall, 0, len(accum))
+				for i := 0; i < len(accum); i++ {
+					a := accum[i]
+					toolCalls = append(toolCalls, ToolCall{
+						ID:   a.id,
+						Type: a.typ,
+						Function: ToolCallFunc{
+							Name:      a.name,
+							Arguments: a.arguments.String(),
+						},
+					})
+				}
+				ch <- ChatStreamChunk{Done: true, ToolCalls: toolCalls}
+				return
 			}
 		}
 	}()

@@ -44,6 +44,8 @@ func Setup(
 	{
 		protected.GET("/user/profile", authH.Profile)
 		protected.GET("/models", chatH.ListModels)
+		protected.GET("/skills", chatH.ListSkills)
+		protected.GET("/mcp-servers", chatH.ListMCPServers)
 
 		conv := protected.Group("/conversations")
 		{
@@ -83,6 +85,23 @@ func Setup(
 			models.POST("", adminH.CreateModel)
 			models.PUT("/:id", adminH.UpdateModel)
 			models.DELETE("/:id", adminH.DeleteModel)
+		}
+
+		skills := admin.Group("/skills")
+		{
+			skills.GET("", adminH.ListSkills)
+			skills.POST("", adminH.CreateSkill)
+			skills.POST("/import", adminH.ImportSkills)
+			skills.PUT("/:id", adminH.UpdateSkill)
+			skills.DELETE("/:id", adminH.DeleteSkill)
+		}
+
+		mcps := admin.Group("/mcp-servers")
+		{
+			mcps.GET("", adminH.ListMCPServers)
+			mcps.POST("", adminH.CreateMCPServer)
+			mcps.PUT("/:id", adminH.UpdateMCPServer)
+			mcps.DELETE("/:id", adminH.DeleteMCPServer)
 		}
 	}
 

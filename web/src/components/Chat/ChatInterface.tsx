@@ -10,15 +10,15 @@ import {
 } from '@ant-design/x';
 import { useXChat } from '@ant-design/x-sdk';
 import { XMarkdown } from '@ant-design/x-markdown';
-import { Avatar, Select, Typography, Spin, Tooltip, Button, message as antMessage, theme } from 'antd';
+import { Avatar, Select, Typography, Spin, Tooltip, Button, message as antMessage, Popover, Checkbox, theme } from 'antd';
 import {
   RobotOutlined, UserOutlined, ThunderboltOutlined,
-  CopyOutlined, EditOutlined,
+  CopyOutlined, EditOutlined, ApiOutlined, ToolOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { createChatProvider, type ChatMessage } from '@/lib/chatProvider';
-import type { ModelInfo, Message } from '@/types';
+import type { ModelInfo, Message, Skill, MCPServer } from '@/types';
 
 const { Text } = Typography;
 
@@ -44,6 +44,11 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
   const [senderValue, setSenderValue] = useState('');
   // id of the user message being edited; null means normal send
   const [editingId, setEditingId] = useState<number | null>(null);
+  // Skills and MCP servers
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [mcpServers, setMcpServers] = useState<MCPServer[]>([]);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
+  const [selectedMCPIds, setSelectedMCPIds] = useState<number[]>([]);
 
   // Holds a message typed/clicked before a conversation existed; sent once provider is ready.
   const pendingMessageRef = useRef<string | null>(null);
@@ -83,6 +88,8 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
       setModels(safe);
       if (safe.length > 0 && !selectedModelRef.current) setSelectedModel(safe[0]);
     }).catch(console.error);
+    api.get<Skill[]>('/skills').then((list) => setSkills(list ?? [])).catch(() => {});
+    api.get<MCPServer[]>('/mcp-servers').then((list) => setMcpServers(list ?? [])).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -153,6 +160,8 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
           title: content.slice(0, 50),
           model_id: model.model_id,
           provider_id: model.provider_id,
+          skill_ids: selectedSkillIds.length > 0 ? selectedSkillIds : undefined,
+          mcp_server_ids: selectedMCPIds.length > 0 ? selectedMCPIds : undefined,
         });
         // Mark BEFORE notifying parent so the history-load effect can skip it
         justCreatedConvRef.current = conv.id;
@@ -183,13 +192,14 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Model selector */}
+      {/* Toolbar: model + skill + MCP */}
       <div style={{
         padding: '8px 16px',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex',
         alignItems: 'center',
         gap: 8,
+        flexWrap: 'wrap',
       }}>
         <ThunderboltOutlined style={{ color: token.colorPrimary }} />
         <Select
@@ -201,12 +211,95 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
             const found = models.find((m) => m.provider_id === pid && m.model_id === mid);
             if (found) setSelectedModel(found);
           }}
-          style={{ minWidth: 220 }}
+          style={{ minWidth: 200 }}
           options={models.map((m) => ({
             value: `${m.provider_id}:${m.model_id}`,
             label: `${m.provider_name} / ${m.display_name}`,
           }))}
         />
+
+        {/* Skill selector */}
+        {skills.length > 0 && (
+          <Popover
+            trigger="click"
+            placement="bottomLeft"
+            content={
+              <div style={{ minWidth: 220 }}>
+                <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                  启用 Skill（系统提示词）
+                </div>
+                <Checkbox.Group
+                  value={selectedSkillIds}
+                  onChange={(vals) => setSelectedSkillIds(vals as number[])}
+                  disabled={!!conversationId}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {skills.map((sk) => (
+                      <Checkbox key={sk.id} value={sk.id}>
+                        <span style={{ marginRight: 4 }}>{sk.icon || '🤖'}</span>
+                        {sk.name}
+                      </Checkbox>
+                    ))}
+                  </div>
+                </Checkbox.Group>
+              </div>
+            }
+          >
+            <Button
+              size="small"
+              icon={<ApiOutlined />}
+              style={{
+                color: selectedSkillIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.5)',
+                borderColor: selectedSkillIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.2)',
+              }}
+            >
+              {selectedSkillIds.length > 0 ? `Skill (${selectedSkillIds.length})` : 'Skill'}
+            </Button>
+          </Popover>
+        )}
+
+        {/* MCP selector */}
+        {mcpServers.length > 0 && (
+          <Popover
+            trigger="click"
+            placement="bottomLeft"
+            content={
+              <div style={{ minWidth: 200 }}>
+                <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                  启用 MCP 工具
+                </div>
+                <Checkbox.Group
+                  value={selectedMCPIds}
+                  onChange={(vals) => setSelectedMCPIds(vals as number[])}
+                  disabled={!!conversationId}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {mcpServers.map((sv) => (
+                      <Checkbox key={sv.id} value={sv.id}>{sv.name}</Checkbox>
+                    ))}
+                  </div>
+                </Checkbox.Group>
+              </div>
+            }
+          >
+            <Button
+              size="small"
+              icon={<ToolOutlined />}
+              style={{
+                color: selectedMCPIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.5)',
+                borderColor: selectedMCPIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.2)',
+              }}
+            >
+              {selectedMCPIds.length > 0 ? `MCP (${selectedMCPIds.length})` : 'MCP'}
+            </Button>
+          </Popover>
+        )}
+
+        {conversationId && (selectedSkillIds.length > 0 || selectedMCPIds.length > 0) && (
+          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+            Skill/MCP 在对话创建时锁定
+          </Text>
+        )}
       </div>
 
       {/* Messages area */}

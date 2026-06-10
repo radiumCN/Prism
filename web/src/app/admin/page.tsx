@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/Layout/AppLayout';
 import ProvidersTable from '@/components/Admin/ProvidersTable';
 import ModelsTable from '@/components/Admin/ModelsTable';
+import SkillsTable from '@/components/Admin/SkillsTable';
+import MCPTable from '@/components/Admin/MCPTable';
 import { useAuthStore } from '@/store/auth';
 import { api } from '@/lib/api';
 
@@ -76,6 +78,24 @@ export default function AdminPage() {
               children: (
                 <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                   <ModelsTable />
+                </Card>
+              ),
+            },
+            {
+              key: 'skills',
+              label: 'Skill 管理',
+              children: (
+                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <SkillsTable />
+                </Card>
+              ),
+            },
+            {
+              key: 'mcp',
+              label: 'MCP 配置',
+              children: (
+                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <MCPTable />
                 </Card>
               ),
             },

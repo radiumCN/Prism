@@ -32,6 +32,32 @@ type UpdateSettingsRequest struct {
 	Settings map[string]string `json:"settings" binding:"required"`
 }
 
+type UpsertSkillRequest struct {
+	Name         string `json:"name" binding:"required,max=100"`
+	Description  string `json:"description"`
+	SystemPrompt string `json:"system_prompt" binding:"required"`
+	Icon         string `json:"icon"`
+	Status       string `json:"status"`
+}
+
+type UpsertMCPServerRequest struct {
+	Name        string `json:"name" binding:"required,max=100"`
+	Description string `json:"description"`
+	URL         string `json:"url" binding:"required"`
+	AuthHeader  string `json:"auth_header"` // raw Authorization value
+	Status      string `json:"status"`
+}
+
+// MCPServerResponse exposes MCPServer data without the encrypted auth header.
+type MCPServerResponse struct {
+	ID          uint   `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	URL         string `json:"url"`
+	HasAuth     bool   `json:"has_auth"` // true when auth_header is configured
+	Status      string `json:"status"`
+}
+
 // ModelInfo is the response shape for the public /api/models endpoint.
 // It combines model metadata with provider context so the chat UI can
 // display "GPT-4o (OpenAI)" style entries and send both IDs when creating a conversation.

@@ -13,6 +13,8 @@ type AdminService struct {
 	modelRepo         *repository.ModelRepository
 	providerModelRepo *repository.ProviderModelRepository
 	settingRepo       *repository.SettingRepository
+	skillRepo         *repository.SkillRepository
+	mcpRepo           *repository.MCPServerRepository
 	cfg               *config.Config
 }
 
@@ -21,6 +23,8 @@ func NewAdminService(
 	modelRepo *repository.ModelRepository,
 	providerModelRepo *repository.ProviderModelRepository,
 	settingRepo *repository.SettingRepository,
+	skillRepo *repository.SkillRepository,
+	mcpRepo *repository.MCPServerRepository,
 	cfg *config.Config,
 ) *AdminService {
 	return &AdminService{
@@ -28,6 +32,8 @@ func NewAdminService(
 		modelRepo:         modelRepo,
 		providerModelRepo: providerModelRepo,
 		settingRepo:       settingRepo,
+		skillRepo:         skillRepo,
+		mcpRepo:           mcpRepo,
 		cfg:               cfg,
 	}
 }
@@ -177,3 +183,153 @@ func (s *AdminService) GetSettings() (map[string]string, error) {
 func (s *AdminService) UpdateSettings(req dto.UpdateSettingsRequest) error {
 	return s.settingRepo.SetMultiple(req.Settings)
 }
+
+// --- Skills ---
+
+func (s *AdminService) ListSkills() ([]model.Skill, error)        { return s.skillRepo.FindAll() }
+func (s *AdminService) ListActiveSkills() ([]model.Skill, error)  { return s.skillRepo.FindActive() }
+
+func (s *AdminService) CreateSkill(req dto.UpsertSkillRequest) (*model.Skill, error) {
+	sk := &model.Skill{
+		Name:         req.Name,
+		Description:  req.Description,
+		SystemPrompt: req.SystemPrompt,
+		Icon:         req.Icon,
+		Status:       req.Status,
+	}
+	if sk.Status == "" {
+		sk.Status = "active"
+	}
+	return sk, s.skillRepo.Create(sk)
+}
+
+func (s *AdminService) UpdateSkill(id uint, req dto.UpsertSkillRequest) (*model.Skill, error) {
+	sk, err := s.skillRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	sk.Name = req.Name
+	sk.Description = req.Description
+	sk.SystemPrompt = req.SystemPrompt
+	sk.Icon = req.Icon
+	if req.Status != "" {
+		sk.Status = req.Status
+	}
+	return sk, s.skillRepo.Update(sk)
+}
+
+func (s *AdminService) DeleteSkill(id uint) error { return s.skillRepo.Delete(id) }
+
+// BulkCreateSkills creates multiple skills, skipping duplicates or invalid entries.
+// Returns the number created and a list of error messages for the failed ones.
+func (s *AdminService) BulkCreateSkills(reqs []dto.UpsertSkillRequest) (int, []string) {
+	created := 0
+	var errs []string
+	for _, req := range reqs {
+		if req.Name == "" || req.SystemPrompt == "" {
+			errs = append(errs, "跳过：name 或 system_prompt 为空")
+			continue
+		}
+		sk := &model.Skill{
+			Name:         req.Name,
+			Description:  req.Description,
+			SystemPrompt: req.SystemPrompt,
+			Icon:         req.Icon,
+			Status:       req.Status,
+		}
+		if sk.Status == "" {
+			sk.Status = "active"
+		}
+		if err := s.skillRepo.Create(sk); err != nil {
+			errs = append(errs, req.Name+": "+err.Error())
+		} else {
+			created++
+		}
+	}
+	return created, errs
+}
+
+// --- MCP Servers ---
+
+func (s *AdminService) ListMCPServers() ([]dto.MCPServerResponse, error) {
+	servers, err := s.mcpRepo.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	resp := make([]dto.MCPServerResponse, 0, len(servers))
+	for _, sv := range servers {
+		resp = append(resp, dto.MCPServerResponse{
+			ID:          sv.ID,
+			Name:        sv.Name,
+			Description: sv.Description,
+			URL:         sv.URL,
+			HasAuth:     sv.AuthHeader != "",
+			Status:      sv.Status,
+		})
+	}
+	return resp, nil
+}
+
+func (s *AdminService) ListActiveMCPServers() ([]dto.MCPServerResponse, error) {
+	servers, err := s.mcpRepo.FindActive()
+	if err != nil {
+		return nil, err
+	}
+	resp := make([]dto.MCPServerResponse, 0, len(servers))
+	for _, sv := range servers {
+		resp = append(resp, dto.MCPServerResponse{
+			ID:          sv.ID,
+			Name:        sv.Name,
+			Description: sv.Description,
+			URL:         sv.URL,
+			HasAuth:     sv.AuthHeader != "",
+			Status:      sv.Status,
+		})
+	}
+	return resp, nil
+}
+
+func (s *AdminService) CreateMCPServer(req dto.UpsertMCPServerRequest) (*dto.MCPServerResponse, error) {
+	sv := &model.MCPServer{
+		Name:        req.Name,
+		Description: req.Description,
+		URL:         req.URL,
+		AuthHeader:  req.AuthHeader,
+		Status:      req.Status,
+	}
+	if sv.Status == "" {
+		sv.Status = "active"
+	}
+	if err := s.mcpRepo.Create(sv); err != nil {
+		return nil, err
+	}
+	return &dto.MCPServerResponse{
+		ID: sv.ID, Name: sv.Name, Description: sv.Description,
+		URL: sv.URL, HasAuth: sv.AuthHeader != "", Status: sv.Status,
+	}, nil
+}
+
+func (s *AdminService) UpdateMCPServer(id uint, req dto.UpsertMCPServerRequest) (*dto.MCPServerResponse, error) {
+	sv, err := s.mcpRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	sv.Name = req.Name
+	sv.Description = req.Description
+	sv.URL = req.URL
+	if req.AuthHeader != "" {
+		sv.AuthHeader = req.AuthHeader
+	}
+	if req.Status != "" {
+		sv.Status = req.Status
+	}
+	if err := s.mcpRepo.Update(sv); err != nil {
+		return nil, err
+	}
+	return &dto.MCPServerResponse{
+		ID: sv.ID, Name: sv.Name, Description: sv.Description,
+		URL: sv.URL, HasAuth: sv.AuthHeader != "", Status: sv.Status,
+	}, nil
+}
+
+func (s *AdminService) DeleteMCPServer(id uint) error { return s.mcpRepo.Delete(id) }

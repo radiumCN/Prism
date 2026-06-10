@@ -70,18 +70,44 @@ type ProviderModel struct {
 	AIModel    *AIModel  `gorm:"foreignKey:ModelID" json:"model,omitempty"`
 }
 
+// Skill is a reusable system-prompt template that can be attached to a conversation.
+type Skill struct {
+	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name         string    `gorm:"uniqueIndex;size:100;not null" json:"name"`
+	Description  string    `gorm:"size:500" json:"description"`
+	SystemPrompt string    `gorm:"type:text;not null" json:"system_prompt"`
+	Icon         string    `gorm:"size:50" json:"icon"` // emoji
+	Status       string    `gorm:"size:20;default:'active'" json:"status"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// MCPServer holds the connection config for an MCP (Model Context Protocol) server.
+type MCPServer struct {
+	ID          uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name        string    `gorm:"uniqueIndex;size:100;not null" json:"name"`
+	Description string    `gorm:"size:500" json:"description"`
+	URL         string    `gorm:"size:500;not null" json:"url"` // HTTP/SSE endpoint
+	AuthHeader  string    `gorm:"size:500" json:"-"`            // Authorization value (encrypted)
+	Status      string    `gorm:"size:20;default:'active'" json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 type Conversation struct {
-	ID         uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID     uint      `gorm:"not null;index" json:"user_id"`
-	Title      string    `gorm:"size:500" json:"title"`
-	ModelID    uint      `gorm:"index" json:"model_id"`
-	ProviderID uint      `gorm:"index" json:"provider_id"`
-	Pinned     bool      `gorm:"default:false" json:"pinned"`
-	Model      *AIModel  `gorm:"foreignKey:ModelID" json:"model,omitempty"`
-	Provider   *Provider `gorm:"foreignKey:ProviderID" json:"provider,omitempty"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	Messages   []Message `gorm:"foreignKey:ConversationID" json:"messages,omitempty"`
+	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID       uint      `gorm:"not null;index" json:"user_id"`
+	Title        string    `gorm:"size:500" json:"title"`
+	ModelID      uint      `gorm:"index" json:"model_id"`
+	ProviderID   uint      `gorm:"index" json:"provider_id"`
+	Pinned       bool      `gorm:"default:false" json:"pinned"`
+	SkillIDs     string    `gorm:"type:text" json:"skill_ids"`      // JSON array of uint IDs
+	MCPServerIDs string    `gorm:"type:text" json:"mcp_server_ids"` // JSON array of uint IDs
+	Model        *AIModel  `gorm:"foreignKey:ModelID" json:"model,omitempty"`
+	Provider     *Provider `gorm:"foreignKey:ProviderID" json:"provider,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Messages     []Message `gorm:"foreignKey:ConversationID" json:"messages,omitempty"`
 }
 
 type Message struct {
