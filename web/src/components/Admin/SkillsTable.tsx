@@ -220,7 +220,7 @@ export default function SkillsTable() {
         okText="保存"
         cancelText="取消"
         width={640}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           <Form.Item name="icon" label="图标（Emoji）">
