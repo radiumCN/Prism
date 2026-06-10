@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Typography } from 'antd';
 import {
   MessageOutlined,
@@ -26,7 +26,11 @@ export default function AppLayout({ children, sidebar }: Props) {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const isAdmin = user?.role === 'admin';
+  // Defer isAdmin until after client mount to prevent SSR/client hydration mismatch
+  // (Zustand reads localStorage on the client but not on the server).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isAdmin = mounted && user?.role === 'admin';
 
   const handleLogout = () => {
     logout();

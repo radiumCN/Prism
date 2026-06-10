@@ -122,6 +122,22 @@ func (h *ChatHandler) DeleteConversation(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// GetConversationInfo returns conversation metadata (including skill_ids, mcp_server_ids).
+func (h *ChatHandler) GetConversationInfo(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	convID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid conversation id"})
+		return
+	}
+	conv, err := h.chatSvc.GetConversationInfo(userID, uint(convID))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, conv)
+}
+
 func (h *ChatHandler) GetMessages(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	convID, err := strconv.ParseUint(c.Param("id"), 10, 64)

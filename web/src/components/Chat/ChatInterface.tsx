@@ -10,10 +10,10 @@ import {
 } from '@ant-design/x';
 import { useXChat } from '@ant-design/x-sdk';
 import { XMarkdown } from '@ant-design/x-markdown';
-import { Avatar, Select, Typography, Spin, Tooltip, Button, message as antMessage, Popover, Checkbox, theme } from 'antd';
+import { Avatar, Select, Typography, Spin, Tooltip, Button, message as antMessage, Popover, Checkbox, theme, Tag } from 'antd';
 import {
   RobotOutlined, UserOutlined, ThunderboltOutlined,
-  CopyOutlined, EditOutlined, ApiOutlined, ToolOutlined,
+  CopyOutlined, EditOutlined, ApiOutlined, ToolOutlined, BookOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
@@ -49,6 +49,9 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
   const [mcpServers, setMcpServers] = useState<MCPServer[]>([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
   const [selectedMCPIds, setSelectedMCPIds] = useState<number[]>([]);
+  // Active skills/MCPs for the CURRENT loaded conversation (loaded from backend)
+  const [activeConvSkillIds, setActiveConvSkillIds] = useState<number[]>([]);
+  const [activeConvMCPIds, setActiveConvMCPIds] = useState<number[]>([])
 
   // Holds a message typed/clicked before a conversation existed; sent once provider is ready.
   const pendingMessageRef = useRef<string | null>(null);
@@ -109,16 +112,23 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
   useEffect(() => {
     if (!conversationId) {
       setMessages([]);
+      setActiveConvSkillIds([]);
+      setActiveConvMCPIds([]);
       return;
     }
     if (justCreatedConvRef.current === conversationId) {
       justCreatedConvRef.current = null;
+      // For newly created conversations, reflect current selections as active
+      setActiveConvSkillIds(selectedSkillIds);
+      setActiveConvMCPIds(selectedMCPIds);
       return;
     }
     setIsLoading(true);
-    api
-      .get<Message[]>(`/conversations/${conversationId}`)
-      .then((history) => {
+    Promise.all([
+      api.get<Message[]>(`/conversations/${conversationId}`),
+      api.get<import('@/types').Conversation>(`/conversations/${conversationId}/info`),
+    ])
+      .then(([history, info]) => {
         setMessages(
           history.map((m, i) => ({
             id: i,
@@ -126,9 +136,22 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
             status: 'success' as const,
           }))
         );
+        // Restore active skill / MCP ids from conversation metadata
+        try {
+          const sids: number[] = info.skill_ids ? JSON.parse(info.skill_ids) : [];
+          const mids: number[] = info.mcp_server_ids ? JSON.parse(info.mcp_server_ids) : [];
+          setActiveConvSkillIds(sids);
+          setActiveConvMCPIds(mids);
+          setSelectedSkillIds(sids);
+          setSelectedMCPIds(mids);
+        } catch {
+          setActiveConvSkillIds([]);
+          setActiveConvMCPIds([]);
+        }
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, setMessages]);
 
   const handleSubmit = async (content: string) => {
@@ -295,10 +318,40 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
           </Popover>
         )}
 
-        {conversationId && (selectedSkillIds.length > 0 || selectedMCPIds.length > 0) && (
-          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
-            Skill/MCP 在对话创建时锁定
-          </Text>
+        {/* Active skill tags for the current conversation */}
+        {conversationId && activeConvSkillIds.length > 0 && skills.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+            <BookOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
+            {activeConvSkillIds.map((sid) => {
+              const sk = skills.find((s) => s.id === sid);
+              return sk ? (
+                <Tag
+                  key={sid}
+                  color="purple"
+                  style={{ fontSize: 11, padding: '0 6px', margin: 0 }}
+                >
+                  {sk.icon ? `${sk.icon} ` : ''}{sk.name}
+                </Tag>
+              ) : null;
+            })}
+          </div>
+        )}
+        {conversationId && activeConvMCPIds.length > 0 && mcpServers.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+            <ToolOutlined style={{ color: '#13c2c2', fontSize: 12 }} />
+            {activeConvMCPIds.map((mid) => {
+              const sv = mcpServers.find((s) => s.id === mid);
+              return sv ? (
+                <Tag
+                  key={mid}
+                  color="cyan"
+                  style={{ fontSize: 11, padding: '0 6px', margin: 0 }}
+                >
+                  {sv.name}
+                </Tag>
+              ) : null;
+            })}
+          </div>
         )}
       </div>
 

@@ -52,6 +52,7 @@ func Setup(
 			conv.POST("", chatH.CreateConversation)
 			conv.GET("", chatH.ListConversations)
 			conv.GET("/:id", chatH.GetMessages)
+			conv.GET("/:id/info", chatH.GetConversationInfo)
 			conv.PATCH("/:id", chatH.UpdateConversation)
 			conv.DELETE("/:id", chatH.DeleteConversation)
 			conv.POST("/:id/messages", chatH.SendMessage)

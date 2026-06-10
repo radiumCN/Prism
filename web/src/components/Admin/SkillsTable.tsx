@@ -172,7 +172,7 @@ export default function SkillsTable() {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="支持格式"
+          title="支持格式"
           description={
             <div style={{ lineHeight: '1.8' }}>
               <div>
@@ -200,7 +200,7 @@ export default function SkillsTable() {
           <Alert
             style={{ marginTop: 16 }}
             type={(importResult.failed?.length ?? 0) === 0 ? 'success' : 'warning'}
-            message={`成功导入 ${importResult.created} / ${importResult.total} 个 Skill`}
+            title={`成功导入 ${importResult.created} / ${importResult.total} 个 Skill`}
             description={
               (importResult.failed?.length ?? 0) > 0
                 ? <ul style={{ margin: 0, paddingLeft: 16 }}>{importResult.failed.map((e, i) => <li key={i}>{e}</li>)}</ul>
@@ -220,6 +220,7 @@ export default function SkillsTable() {
         okText="保存"
         cancelText="取消"
         width={640}
+        destroyOnClose
       >
         <Form form={form} layout="vertical">
           <Form.Item name="icon" label="图标（Emoji）">

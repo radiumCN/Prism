@@ -101,8 +101,8 @@ type Conversation struct {
 	ModelID      uint      `gorm:"index" json:"model_id"`
 	ProviderID   uint      `gorm:"index" json:"provider_id"`
 	Pinned       bool      `gorm:"default:false" json:"pinned"`
-	SkillIDs     string    `gorm:"type:text" json:"skill_ids"`      // JSON array of uint IDs
-	MCPServerIDs string    `gorm:"type:text" json:"mcp_server_ids"` // JSON array of uint IDs
+	SkillIDs     string    `gorm:"column:skill_ids;type:text" json:"skill_ids"`           // JSON array of uint IDs
+	MCPServerIDs string    `gorm:"column:mcp_server_ids;type:text" json:"mcp_server_ids"` // JSON array of uint IDs
 	Model        *AIModel  `gorm:"foreignKey:ModelID" json:"model,omitempty"`
 	Provider     *Provider `gorm:"foreignKey:ProviderID" json:"provider,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`

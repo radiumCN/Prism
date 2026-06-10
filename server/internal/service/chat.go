@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"modelhub/server/internal/adapter"
 	"modelhub/server/internal/config"
 	"modelhub/server/internal/dto"
@@ -120,6 +121,14 @@ func (s *ChatService) DeleteConversation(userID, convID uint) error {
 	return s.convRepo.Delete(convID, userID)
 }
 
+func (s *ChatService) GetConversationInfo(userID, convID uint) (*model.Conversation, error) {
+	conv, err := s.convRepo.FindByID(convID, userID)
+	if err != nil {
+		return nil, errors.New("conversation not found")
+	}
+	return conv, nil
+}
+
 func (s *ChatService) GetMessages(userID, convID uint) ([]model.Message, error) {
 	conv, err := s.convRepo.FindByID(convID, userID)
 	if err != nil {
@@ -226,15 +235,18 @@ func (s *ChatService) executeMCPToolCalls(ctx context.Context, toolCalls []adapt
 // getSystemPrompts concatenates the system prompts from all skills attached to a conversation.
 // Multiple prompts are separated by a blank line.
 func (s *ChatService) getSystemPrompts(conv *model.Conversation) string {
+	log.Printf("[SKILL] convID=%d skill_ids=%q", conv.ID, conv.SkillIDs)
 	if conv.SkillIDs == "" || conv.SkillIDs == "[]" {
 		return ""
 	}
 	var ids []uint
 	if err := json.Unmarshal([]byte(conv.SkillIDs), &ids); err != nil || len(ids) == 0 {
+		log.Printf("[SKILL] unmarshal error or empty ids: %v", conv.SkillIDs)
 		return ""
 	}
 	skills, err := s.skillRepo.FindByIDs(ids)
 	if err != nil || len(skills) == 0 {
+		log.Printf("[SKILL] FindByIDs(%v) returned no skills: err=%v", ids, err)
 		return ""
 	}
 	parts := make([]string, 0, len(skills))
@@ -243,7 +255,9 @@ func (s *ChatService) getSystemPrompts(conv *model.Conversation) string {
 			parts = append(parts, sk.SystemPrompt)
 		}
 	}
-	return strings.Join(parts, "\n\n")
+	result := strings.Join(parts, "\n\n")
+	log.Printf("[SKILL] injecting system prompt len=%d from %d skills", len(result), len(skills))
+	return result
 }
 
 // ListAvailableModels returns all (provider, model) pairs that are active and usable for chat.

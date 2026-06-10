@@ -46,10 +46,19 @@ func AutoMigrate(db *gorm.DB) error {
 // such as dropping old NOT NULL constraints from columns that are no longer part of the model.
 func RunCustomMigrations(db *gorm.DB) error {
 	// ai_models.provider_id was required in the old schema but is no longer used.
-	// Drop the column if it still exists so inserts without a provider_id succeed.
 	if db.Migrator().HasColumn(&model.AIModel{}, "provider_id") {
 		if err := db.Exec(`ALTER TABLE ai_models DROP COLUMN IF EXISTS provider_id`).Error; err != nil {
 			return err
+		}
+	}
+
+	// Ensure skill_ids and mcp_server_ids columns exist (GORM may have inferred wrong names
+	// for multi-word acronym fields like SkillIDs → skill_i_ds).
+	for _, col := range []string{"skill_ids", "mcp_server_ids"} {
+		if !db.Migrator().HasColumn(&model.Conversation{}, col) {
+			if err := db.Exec(`ALTER TABLE conversations ADD COLUMN IF NOT EXISTS ` + col + ` TEXT`).Error; err != nil {
+				return err
+			}
 		}
 	}
 	return nil
