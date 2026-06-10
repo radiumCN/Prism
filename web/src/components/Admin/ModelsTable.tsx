@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm, message, Tag, Switch, InputNumber } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm, App, Tag, Switch, InputNumber } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import type { AIModel } from '@/types';
@@ -17,16 +17,21 @@ const API_FORMATS = [
   { value: 'openai_responses',    label: 'OpenAI Responses API  (/v1/responses)' },
   { value: 'anthropic_messages',  label: 'Anthropic Messages  (/v1/messages)' },
   { value: 'gemini_generate',     label: 'Gemini generateContent  (/v1beta/models/…:generateContent)' },
+  { value: 'openai_image',        label: 'OpenAI Images  (/v1/images/generations)  — DALL-E' },
+  { value: 'gemini_image',        label: 'Gemini Imagen  (Google 图像生成)' },
 ];
 
 const API_FORMAT_TAG: Record<string, { color: string; short: string }> = {
-  openai_chat:        { color: 'blue',   short: 'OAI Chat' },
-  openai_responses:   { color: 'cyan',   short: 'OAI Resp' },
-  anthropic_messages: { color: 'orange', short: 'Anthropic' },
-  gemini_generate:    { color: 'green',  short: 'Gemini' },
+  openai_chat:        { color: 'blue',    short: 'OAI Chat' },
+  openai_responses:   { color: 'cyan',    short: 'OAI Resp' },
+  anthropic_messages: { color: 'orange',  short: 'Anthropic' },
+  gemini_generate:    { color: 'green',   short: 'Gemini' },
+  openai_image:       { color: 'magenta', short: 'DALL-E' },
+  gemini_image:       { color: 'lime',    short: 'Imagen' },
 };
 
 export default function ModelsTable() {
+  const { message } = App.useApp();
   const [models, setModels] = useState<AIModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -184,6 +189,7 @@ export default function ModelsTable() {
         onCancel={() => setModalOpen(false)}
         footer={null}
         width={520}
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSave} style={{ marginTop: 8 }}>
           <Form.Item

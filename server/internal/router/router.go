@@ -59,6 +59,7 @@ func Setup(
 		}
 
 		protected.POST("/images/generate", genH.GenerateImage)
+		protected.GET("/images/history", genH.ListImageHistory)
 	}
 
 	// Admin routes

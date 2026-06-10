@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Table, Button, Modal, Form, Input, Select, Space, Popconfirm,
-  message, Tag, Tabs, Divider, Badge, Checkbox, Empty, Spin,
+  App, Tag, Tabs, Divider, Badge, Checkbox, Empty, Spin,
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined,
@@ -28,6 +28,7 @@ function ProviderModelAssoc({ provider, onCountChange }: {
   provider: Provider;
   onCountChange?: (count: number) => void;
 }) {
+  const { message } = App.useApp();
   const [allModels, setAllModels] = useState<AIModel[]>([]);
   const [checkedIDs, setCheckedIDs] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -175,6 +176,7 @@ function ProviderModelAssoc({ provider, onCountChange }: {
 
 // ── 供应商主表 ────────────────────────────────────────────────
 export default function ProvidersTable() {
+  const { message } = App.useApp();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [modelCounts, setModelCounts] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(false);
@@ -185,8 +187,14 @@ export default function ProvidersTable() {
 
   const load = () => {
     setLoading(true);
-    api.get<Provider[]>('/admin/providers')
-      .then(setProviders)
+    api.get<(Provider & { model_count?: number })[]>('/admin/providers')
+      .then((list) => {
+        setProviders(list);
+        // Seed modelCounts from what the server already returned
+        const counts: Record<number, number> = {};
+        list.forEach((p) => { counts[p.id] = p.model_count ?? 0; });
+        setModelCounts((prev) => ({ ...counts, ...prev }));
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
@@ -327,6 +335,7 @@ export default function ProvidersTable() {
             {
               key: 'info',
               label: <Space><ApiOutlined />基本信息</Space>,
+              forceRender: true,
               children: (
                 <Form form={form} layout="vertical" onFinish={handleSaveInfo} style={{ marginTop: 8 }}>
                   <Form.Item name="name" label="供应商名称" rules={[{ required: true }]}>

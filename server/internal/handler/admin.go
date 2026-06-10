@@ -24,12 +24,29 @@ func NewAdminHandler(adminSvc *service.AdminService) *AdminHandler {
 }
 
 func (h *AdminHandler) ListProviders(c *gin.Context) {
-	providers, err := h.adminSvc.ListProviders()
+	providers, counts, err := h.adminSvc.ListProvidersWithModelCounts()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, providers)
+	type providerWithCount struct {
+		ID         uint   `json:"id"`
+		Name       string `json:"name"`
+		BaseURL    string `json:"base_url"`
+		Status     string `json:"status"`
+		ModelCount int    `json:"model_count"`
+	}
+	result := make([]providerWithCount, 0, len(providers))
+	for _, p := range providers {
+		result = append(result, providerWithCount{
+			ID:         p.ID,
+			Name:       p.Name,
+			BaseURL:    p.BaseURL,
+			Status:     p.Status,
+			ModelCount: counts[p.ID],
+		})
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *AdminHandler) CreateProvider(c *gin.Context) {

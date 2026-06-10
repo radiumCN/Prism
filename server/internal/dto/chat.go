@@ -38,12 +38,19 @@ type MessageResponse struct {
 }
 
 type GenerateImageRequest struct {
-	ModelID    uint   `json:"model_id" binding:"required"`
-	ProviderID uint   `json:"provider_id"`
-	Prompt     string `json:"prompt" binding:"required"`
-	Width      int    `json:"width"`
-	Height     int    `json:"height"`
-	Style      string `json:"style"`
+	ModelID        uint   `json:"model_id" binding:"required"`
+	ProviderID     uint   `json:"provider_id"`
+	Prompt         string `json:"prompt" binding:"required"`
+	NegativePrompt string `json:"negative_prompt"`
+	// DALL-E / generic
+	Width   int    `json:"width"`
+	Height  int    `json:"height"`
+	Style   string `json:"style"`   // vivid | natural
+	Quality string `json:"quality"` // standard | hd
+	N       int    `json:"n"`       // number of images
+	// Gemini
+	AspectRatio string `json:"aspect_ratio"` // 1:1 16:9 9:16 etc.
+	ImageSize   string `json:"image_size"`   // 1K 2K 4K
 }
 
 type GenerateVideoRequest struct {

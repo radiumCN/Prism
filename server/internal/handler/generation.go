@@ -75,7 +75,7 @@ func (h *GenerationHandler) GenerateImage(c *gin.Context) {
 		apiKey = provider.APIKey
 	}
 
-	imgAdapter, err := adapter.NewImageAdapter(provider.Name, apiKey, provider.BaseURL)
+	imgAdapter, err := adapter.NewImageAdapter(aiModel.APIFormat, provider.Name, apiKey, provider.BaseURL)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -95,9 +95,14 @@ func (h *GenerationHandler) GenerateImage(c *gin.Context) {
 	}
 
 	urls, err := imgAdapter.GenerateImage(c.Request.Context(), aiModel.ModelName, req.Prompt, adapter.ImageOptions{
-		Width:  req.Width,
-		Height: req.Height,
-		Style:  req.Style,
+		Width:          req.Width,
+		Height:         req.Height,
+		Style:          req.Style,
+		Quality:        req.Quality,
+		N:              req.N,
+		NegativePrompt: req.NegativePrompt,
+		AspectRatio:    req.AspectRatio,
+		ImageSize:      req.ImageSize,
 	})
 	if err != nil {
 		h.db.Model(gen).Updates(map[string]interface{}{"status": "error", "error_message": err.Error()})
@@ -114,4 +119,46 @@ func (h *GenerationHandler) GenerateImage(c *gin.Context) {
 		"prompt":     req.Prompt,
 		"urls":       urls,
 	})
+}
+
+func (h *GenerationHandler) ListImageHistory(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	var gens []model.Generation
+	if err := h.db.
+		Where("user_id = ? AND type = ?", userID, "image").
+		Order("created_at DESC").
+		Limit(50).
+		Find(&gens).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	type item struct {
+		ID           uint     `json:"id"`
+		Prompt       string   `json:"prompt"`
+		URLs         []string `json:"urls"`
+		Status       string   `json:"status"`
+		ErrorMessage string   `json:"error_message,omitempty"`
+		CreatedAt    string   `json:"created_at"`
+	}
+	result := make([]item, 0, len(gens))
+	for _, g := range gens {
+		var urls []string
+		if g.Status == "completed" && g.ResultURL != "" {
+			for _, u := range strings.Split(g.ResultURL, "\n") {
+				if u != "" {
+					urls = append(urls, u)
+				}
+			}
+		}
+		result = append(result, item{
+			ID:           g.ID,
+			Prompt:       g.Prompt,
+			URLs:         urls,
+			Status:       g.Status,
+			ErrorMessage: g.ErrorMessage,
+			CreatedAt:    g.CreatedAt.Format("2006-01-02 15:04"),
+		})
+	}
+	c.JSON(http.StatusOK, result)
 }

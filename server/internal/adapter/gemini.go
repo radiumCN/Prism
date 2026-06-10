@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
+	"time"
 )
 
 type GeminiAdapter struct {
@@ -17,32 +19,79 @@ type GeminiAdapter struct {
 
 func NewGeminiAdapter(apiKey, baseURL string) *GeminiAdapter {
 	if baseURL == "" {
-		baseURL = "https://generativelanguage.googleapis.com/v1beta"
+		baseURL = "https://generativelanguage.googleapis.com"
 	}
+	// Normalize: strip any trailing version suffix so we append /v1beta uniformly.
+	// This handles configs like https://yunwu.ai/v1 or
+	// https://generativelanguage.googleapis.com/v1beta.
+	baseURL = strings.TrimRight(baseURL, "/")
+	baseURL = strings.TrimSuffix(baseURL, "/v1beta")
+	baseURL = strings.TrimSuffix(baseURL, "/v1")
 	return &GeminiAdapter{
 		APIKey:  apiKey,
-		BaseURL: baseURL,
-		client:  &http.Client{},
+		BaseURL: baseURL, // always bare root, e.g. https://yunwu.ai
+		client:  &http.Client{Timeout: 120 * time.Second},
 	}
 }
 
-type geminiContent struct {
-	Role  string        `json:"role"`
-	Parts []geminiPart  `json:"parts"`
+// isNativeGoogle returns true when talking directly to Google's API.
+// Native Google uses ?key= auth; third-party gateways use Authorization: Bearer.
+func (a *GeminiAdapter) isNativeGoogle() bool {
+	return strings.Contains(a.BaseURL, "googleapis.com")
+}
+
+// geminiURL builds the full endpoint URL.
+// path should be like "models/{model}:generateContent".
+func (a *GeminiAdapter) geminiURL(path string) string {
+	if a.isNativeGoogle() {
+		return fmt.Sprintf("%s/v1beta/%s?key=%s", a.BaseURL, path, a.APIKey)
+	}
+	return fmt.Sprintf("%s/v1beta/%s", a.BaseURL, path)
+}
+
+// geminiRequest creates an authenticated HTTP request.
+func (a *GeminiAdapter) newHTTPRequest(ctx context.Context, method, url string, body []byte) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if !a.isNativeGoogle() {
+		req.Header.Set("Authorization", "Bearer "+a.APIKey)
+	}
+	return req, nil
+}
+
+type geminiInlineData struct {
+	MimeType string `json:"mimeType"`
+	Data     string `json:"data"` // base64
 }
 
 type geminiPart struct {
-	Text string `json:"text"`
+	Text       string             `json:"text,omitempty"`
+	InlineData *geminiInlineData `json:"inlineData,omitempty"`
+}
+
+type geminiContent struct {
+	Role  string       `json:"role"`
+	Parts []geminiPart `json:"parts"`
+}
+
+type geminiImageConfig struct {
+	AspectRatio string `json:"aspectRatio,omitempty"` // 1:1 16:9 etc.
+	ImageSize   string `json:"imageSize,omitempty"`   // 1K 2K 4K
+}
+
+type geminiGenConfig struct {
+	MaxOutputTokens    int                `json:"maxOutputTokens,omitempty"`
+	Temperature        float64            `json:"temperature,omitempty"`
+	ResponseModalities []string           `json:"responseModalities,omitempty"`
+	ImageConfig        *geminiImageConfig `json:"imageConfig,omitempty"`
 }
 
 type geminiRequest struct {
 	Contents         []geminiContent  `json:"contents"`
 	GenerationConfig *geminiGenConfig `json:"generationConfig,omitempty"`
-}
-
-type geminiGenConfig struct {
-	MaxOutputTokens int     `json:"maxOutputTokens,omitempty"`
-	Temperature     float64 `json:"temperature,omitempty"`
 }
 
 type geminiResponse struct {
@@ -54,6 +103,10 @@ type geminiResponse struct {
 	UsageMetadata struct {
 		TotalTokenCount int `json:"totalTokenCount"`
 	} `json:"usageMetadata"`
+	Error *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 func (a *GeminiAdapter) buildContents(messages []Message) []geminiContent {
@@ -87,12 +140,11 @@ func (a *GeminiAdapter) ChatCompletion(ctx context.Context, model string, messag
 		return ChatResponse{}, err
 	}
 
-	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", a.BaseURL, model, a.APIKey)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	endpoint := a.geminiURL(fmt.Sprintf("models/%s:generateContent", model))
+	req, err := a.newHTTPRequest(ctx, "POST", endpoint, body)
 	if err != nil {
 		return ChatResponse{}, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := a.client.Do(req)
 	if err != nil {
@@ -128,12 +180,18 @@ func (a *GeminiAdapter) ChatCompletionStream(ctx context.Context, model string, 
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/models/%s:streamGenerateContent?key=%s&alt=sse", a.BaseURL, model, a.APIKey)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	// For native Google, alt=sse is required for SSE streaming.
+	// Third-party gateways (yunwu.ai etc.) handle SSE without it.
+	streamPath := fmt.Sprintf("models/%s:streamGenerateContent", model)
+	streamURL := a.geminiURL(streamPath)
+	if a.isNativeGoogle() {
+		// geminiURL already appended ?key=..., so use & to add alt=sse
+		streamURL += "&alt=sse"
+	}
+	req, err := a.newHTTPRequest(ctx, "POST", streamURL, body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := a.client.Do(req)
 	if err != nil {
@@ -177,44 +235,194 @@ func (a *GeminiAdapter) ChatCompletionStream(ctx context.Context, model string, 
 	return ch, nil
 }
 
-// GenerateImage implements ImageAdapter for Gemini Imagen
-func (a *GeminiAdapter) GenerateImage(ctx context.Context, model string, prompt string, options ImageOptions) ([]string, error) {
-	type imageRequest struct {
-		Instances []struct {
-			Prompt string `json:"prompt"`
-		} `json:"instances"`
-		Parameters struct {
-			SampleCount int `json:"sampleCount"`
-		} `json:"parameters"`
+// isGeminiImageModel returns true for models that use the :generateContent endpoint
+// for image generation (as opposed to Imagen models that use :predict).
+func isGeminiImageModel(model string) bool {
+	lower := strings.ToLower(model)
+	return (strings.Contains(lower, "gemini") &&
+		(strings.Contains(lower, "image") || strings.Contains(lower, "imagen") ||
+			strings.Contains(lower, "exp-image"))) ||
+		strings.Contains(lower, "gemini-2.0-flash-exp-image")
+}
+
+// aspectRatioFromOptions derives a Gemini aspect-ratio string from either an
+// explicit AspectRatio value or, as a fallback, from Width/Height pixels.
+func aspectRatioFromOptions(opts ImageOptions) string {
+	if opts.AspectRatio != "" {
+		return opts.AspectRatio
+	}
+	// Derive from pixel dimensions when caller used the DALL-E-style fields
+	if opts.Width > 0 && opts.Height > 0 {
+		ratios := [][3]int{
+			{1, 1, 0}, {16, 9, 0}, {9, 16, 0}, {3, 2, 0}, {2, 3, 0},
+			{4, 3, 0}, {3, 4, 0}, {4, 5, 0}, {5, 4, 0},
+		}
+		bestKey := "1:1"
+		bestErr := 1.0e9
+		for _, r := range ratios {
+			target := float64(r[0]) / float64(r[1])
+			actual := float64(opts.Width) / float64(opts.Height)
+			diff := target - actual
+			if diff < 0 {
+				diff = -diff
+			}
+			if diff < bestErr {
+				bestErr = diff
+				bestKey = fmt.Sprintf("%d:%d", r[0], r[1])
+			}
+		}
+		return bestKey
+	}
+	return "1:1"
+}
+
+// imageSizeFromOptions returns the Gemini imageSize string.
+// Valid values: 0.5K (Gemini 3.1 only / 512), 1K (default), 2K, 4K
+func imageSizeFromOptions(opts ImageOptions) string {
+	if opts.ImageSize != "" {
+		return opts.ImageSize
+	}
+	// Map DALL-E quality: hd → 2K, standard → 1K
+	if opts.Quality == "hd" {
+		return "2K"
+	}
+	return "1K"
+}
+
+// GenerateImage implements ImageAdapter for all Gemini image generation models.
+//
+// Routing logic:
+//   - "gemini-*-image*" / "gemini-*-exp-image*"  → :generateContent + responseModalities:["IMAGE"]
+//   - "imagen-*"                                  → :predict (Vertex AI Imagen style)
+func (a *GeminiAdapter) GenerateImage(ctx context.Context, model string, prompt string, opts ImageOptions) ([]string, error) {
+	lower := strings.ToLower(model)
+	if strings.HasPrefix(lower, "imagen") || strings.Contains(lower, "imagen-4") {
+		return a.generateImageViaPredict(ctx, model, prompt, opts)
+	}
+	return a.generateImageViaGenerateContent(ctx, model, prompt, opts)
+}
+
+// generateImageViaGenerateContent handles gemini-*-image* models.
+func (a *GeminiAdapter) generateImageViaGenerateContent(ctx context.Context, model, prompt string, opts ImageOptions) ([]string, error) {
+	n := opts.N
+	if n <= 0 {
+		n = 1
 	}
 
-	reqBody := imageRequest{}
-	reqBody.Instances = []struct {
-		Prompt string `json:"prompt"`
-	}{{Prompt: prompt}}
-	reqBody.Parameters.SampleCount = 1
+	imgCfg := &geminiImageConfig{
+		AspectRatio: aspectRatioFromOptions(opts),
+		ImageSize:   imageSizeFromOptions(opts),
+	}
+
+	reqBody := geminiRequest{
+		Contents: []geminiContent{
+			{
+				Role:  "user",
+				Parts: []geminiPart{{Text: prompt}},
+			},
+		},
+		GenerationConfig: &geminiGenConfig{
+			ResponseModalities: []string{"IMAGE"},
+			ImageConfig:        imgCfg,
+		},
+	}
 
 	body, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/models/%s:predict?key=%s", a.BaseURL, model, a.APIKey)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	endpoint := a.geminiURL(fmt.Sprintf("models/%s:generateContent", model))
+	httpReq, err := a.newHTTPRequest(ctx, "POST", endpoint, body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := a.client.Do(req)
+	resp, err := a.client.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gemini image request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("gemini image error %d: %s", resp.StatusCode, string(b))
+		return nil, fmt.Errorf("gemini image error %d: %s", resp.StatusCode, string(raw))
+	}
+
+	var result geminiResponse
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, fmt.Errorf("gemini image decode error: %w", err)
+	}
+	if result.Error != nil {
+		return nil, fmt.Errorf("gemini image api error %d: %s", result.Error.Code, result.Error.Message)
+	}
+
+	var urls []string
+	for _, cand := range result.Candidates {
+		for _, part := range cand.Content.Parts {
+			if part.InlineData != nil && part.InlineData.Data != "" {
+				mime := part.InlineData.MimeType
+				if mime == "" {
+					mime = "image/png"
+				}
+				urls = append(urls, "data:"+mime+";base64,"+part.InlineData.Data)
+			}
+		}
+	}
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("gemini returned no image data (response: %s)", string(raw))
+	}
+	return urls, nil
+}
+
+// generateImageViaPredict handles Imagen models (imagen-4.0-*, etc.).
+func (a *GeminiAdapter) generateImageViaPredict(ctx context.Context, model, prompt string, opts ImageOptions) ([]string, error) {
+	n := opts.N
+	if n <= 0 {
+		n = 1
+	}
+
+	type predictRequest struct {
+		Instances []struct {
+			Prompt string `json:"prompt"`
+		} `json:"instances"`
+		Parameters struct {
+			SampleCount     int    `json:"sampleCount"`
+			AspectRatio     string `json:"aspectRatio,omitempty"`
+			NegativePrompt  string `json:"negativePrompt,omitempty"`
+		} `json:"parameters"`
+	}
+
+	reqBody := predictRequest{}
+	reqBody.Instances = []struct {
+		Prompt string `json:"prompt"`
+	}{{Prompt: prompt}}
+	reqBody.Parameters.SampleCount = n
+	reqBody.Parameters.AspectRatio = aspectRatioFromOptions(opts)
+	if opts.NegativePrompt != "" {
+		reqBody.Parameters.NegativePrompt = opts.NegativePrompt
+	}
+
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := a.geminiURL(fmt.Sprintf("models/%s:predict", model))
+	httpReq, err := a.newHTTPRequest(ctx, "POST", endpoint, body)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := a.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("imagen predict request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("imagen predict error %d: %s", resp.StatusCode, string(raw))
 	}
 
 	var result struct {
@@ -222,14 +430,28 @@ func (a *GeminiAdapter) GenerateImage(ctx context.Context, model string, prompt 
 			BytesBase64Encoded string `json:"bytesBase64Encoded"`
 			MimeType           string `json:"mimeType"`
 		} `json:"predictions"`
+		Error *struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, fmt.Errorf("imagen predict decode error: %w", err)
+	}
+	if result.Error != nil {
+		return nil, fmt.Errorf("imagen api error %d: %s", result.Error.Code, result.Error.Message)
 	}
 
 	urls := make([]string, 0, len(result.Predictions))
 	for _, p := range result.Predictions {
-		urls = append(urls, "data:"+p.MimeType+";base64,"+p.BytesBase64Encoded)
+		mime := p.MimeType
+		if mime == "" {
+			mime = "image/png"
+		}
+		urls = append(urls, "data:"+mime+";base64,"+p.BytesBase64Encoded)
+	}
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("imagen returned no image data")
 	}
 	return urls, nil
 }

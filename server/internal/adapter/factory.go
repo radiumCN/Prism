@@ -23,11 +23,21 @@ func NewChatAdapter(apiFormat, apiKey, baseURL string) (ChatAdapter, error) {
 	}
 }
 
-func NewImageAdapter(providerName, apiKey, baseURL string) (ImageAdapter, error) {
+// NewImageAdapter selects the right image adapter.
+// apiFormat takes precedence; if empty, falls back to providerName heuristic.
+func NewImageAdapter(apiFormat, providerName, apiKey, baseURL string) (ImageAdapter, error) {
+	switch apiFormat {
+	case "openai_image":
+		return NewOpenAIImageAdapter(apiKey, baseURL), nil
+	case "gemini_image":
+		return NewGeminiAdapter(apiKey, baseURL), nil
+	}
+	// Legacy: fall back to provider-name-based detection
 	switch providerName {
 	case "gemini", "google":
 		return NewGeminiAdapter(apiKey, baseURL), nil
 	default:
-		return nil, fmt.Errorf("unsupported image provider: %s", providerName)
+		// Default to OpenAI-compatible for unknown providers
+		return NewOpenAIImageAdapter(apiKey, baseURL), nil
 	}
 }

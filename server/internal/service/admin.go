@@ -42,6 +42,23 @@ func (s *AdminService) ListProviders() ([]model.Provider, error) {
 	return s.providerRepo.FindAll()
 }
 
+// ListProvidersWithModelCounts returns all providers together with a map of
+// providerID → number of associated active models.
+func (s *AdminService) ListProvidersWithModelCounts() ([]model.Provider, map[uint]int, error) {
+	providers, err := s.providerRepo.FindAll()
+	if err != nil {
+		return nil, nil, err
+	}
+	counts := make(map[uint]int, len(providers))
+	for _, p := range providers {
+		pms, err := s.providerModelRepo.GetByProvider(p.ID)
+		if err == nil {
+			counts[p.ID] = len(pms)
+		}
+	}
+	return providers, counts, nil
+}
+
 func (s *AdminService) CreateProvider(req dto.UpsertProviderRequest) (*model.Provider, error) {
 	p := &model.Provider{
 		Name:    req.Name,

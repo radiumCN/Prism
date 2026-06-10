@@ -62,9 +62,19 @@ type ChatStreamChunk struct {
 }
 
 type ImageOptions struct {
-	Width  int
-	Height int
-	Style  string
+	// Common
+	N              int    // number of images to generate
+	NegativePrompt string // for models that support it
+
+	// DALL-E specific
+	Width   int
+	Height  int
+	Style   string // vivid | natural
+	Quality string // standard | hd
+
+	// Gemini specific (takes precedence over Width/Height for Gemini models)
+	AspectRatio string // 1:1 2:3 3:2 3:4 4:3 4:5 5:4 9:16 16:9 21:9
+	ImageSize   string // 0.5K(Gemini 3.1 only) | 1K | 2K | 4K
 }
 
 type VideoOptions struct {
