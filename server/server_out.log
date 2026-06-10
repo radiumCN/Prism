@@ -1,0 +1,608 @@
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[9.538ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.727ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[18.431ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'users'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.503ms] [34;1m[rows:-][0m SELECT * FROM "users" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[9.954ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'users' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[6.585ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'users'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.441ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'users'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.418ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.284ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'username') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.635ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'email') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.184ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'password_hash') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.491ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'role') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.018ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.756ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.509ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[4.458ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'users' AND indexname = 'idx_users_username' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.508ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'users' AND indexname = 'idx_users_email' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.506ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'settings' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[3.757ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'settings'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.545ms] [34;1m[rows:-][0m SELECT * FROM "settings" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[6.258ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'settings' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[5.661ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'settings'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.506ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'settings'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'settings' AND column_name = 'key') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'settings' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.636ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'settings' AND column_name = 'value') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'settings' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.565ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'settings' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'settings' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.029ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'providers' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[3.892ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'providers'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.632ms] [34;1m[rows:-][0m SELECT * FROM "providers" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[6.070ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'providers' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[6.907ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'providers'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.538ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'providers'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.990ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'providers' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'providers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.698ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'providers' AND column_name = 'name') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'providers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.756ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'providers' AND column_name = 'api_key') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'providers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.509ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'providers' AND column_name = 'base_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'providers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'providers' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'providers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'providers' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'providers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.624ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'providers' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'providers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.509ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'providers' AND indexname = 'idx_providers_name' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.485ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[4.974ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.072ms] [34;1m[rows:-][0m SELECT * FROM "ai_models" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[4.708ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'ai_models' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[6.027ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'ai_models'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.086ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'ai_models'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.650ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.516ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'model_name') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'display_name') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'type') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'api_format') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.517ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'max_tokens') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'supports_streaming') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'supports_vision') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'config_json') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.587ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.508ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'ai_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.187ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'ai_models' AND indexname = 'idx_ai_models_model_name' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.507ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'provider_models' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[4.947ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'provider_models'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.014ms] [34;1m[rows:-][0m SELECT * FROM "provider_models" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[5.171ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'provider_models' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[6.193ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'provider_models'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.520ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'provider_models'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.517ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'provider_models' AND column_name = 'provider_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'provider_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'provider_models' AND column_name = 'model_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'provider_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'provider_models' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'provider_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'provider_models' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'provider_models' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.011ms] [34;1m[rows:1][0m SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'provider_models' AND constraint_name = 'fk_provider_models_ai_model'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.506ms] [34;1m[rows:1][0m SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'provider_models' AND constraint_name = 'fk_provider_models_provider'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.038ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'provider_models' AND indexname = 'idx_provider_models_provider_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.508ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'provider_models' AND indexname = 'idx_provider_models_model_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.527ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[4.857ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'skills'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.582ms] [34;1m[rows:-][0m SELECT * FROM "skills" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[5.748ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'skills' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[5.144ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'skills'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.898ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'skills'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.527ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'skills' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.597ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND column_name = 'name') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'skills' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.519ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND column_name = 'description') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'skills' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.630ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND column_name = 'system_prompt') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'skills' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND column_name = 'icon') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'skills' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.532ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'skills' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'skills' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.740ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'skills' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'skills' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.600ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'skills' AND indexname = 'idx_skills_name' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.779ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.013ms] [34;1m[rows:-][0m SELECT * FROM "mcp_servers" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'mcp_servers' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.981ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'mcp_servers'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'mcp_servers'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'mcp_servers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND column_name = 'name') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'mcp_servers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND column_name = 'description') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'mcp_servers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND column_name = 'url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'mcp_servers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND column_name = 'auth_header') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'mcp_servers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.503ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'mcp_servers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'mcp_servers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'mcp_servers' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'mcp_servers' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.096ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'mcp_servers' AND indexname = 'idx_mcp_servers_name' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.506ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'conversations'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.322ms] [34;1m[rows:-][0m SELECT * FROM "conversations" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.548ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'conversations' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.059ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'conversations'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'conversations'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.526ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.613ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.514ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'title') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'model_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'provider_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'pinned') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.516ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'skill_ids') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'mcp_server_ids') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'conversations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.513ms] [34;1m[rows:1][0m SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND constraint_name = 'fk_conversations_model'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.040ms] [34;1m[rows:1][0m SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND constraint_name = 'fk_conversations_provider'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.536ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'conversations' AND indexname = 'idx_conversations_user_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.506ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'conversations' AND indexname = 'idx_conversations_model_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.512ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'conversations' AND indexname = 'idx_conversations_provider_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.027ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'messages'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.568ms] [34;1m[rows:-][0m SELECT * FROM "messages" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.055ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'messages' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.197ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'messages'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.515ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'messages'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.508ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.995ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND column_name = 'conversation_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND column_name = 'role') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND column_name = 'content') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND column_name = 'image_urls') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.995ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND column_name = 'metadata') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND column_name = 'token_count') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.995ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'messages' AND constraint_name = 'fk_conversations_messages'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'messages' AND indexname = 'idx_messages_conversation_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND table_type = 'BASE TABLE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.992ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'modelhub' AND table_schema = CURRENT_SCHEMA() AND table_name = 'generations'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[2.964ms] [34;1m[rows:-][0m SELECT * FROM "generations" LIMIT 5
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[1.070ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'generations' AND constraint_type = 'UNIQUE'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.515ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'modelhub' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'generations'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'generations'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.996ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.997ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'type') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.995ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'model_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'provider_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'prompt') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'parameters') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'result_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'error_message') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'generations' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'generations' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.998ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'generations' AND indexname = 'idx_generations_user_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'generations' AND indexname = 'idx_generations_model_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:31
+[0m[33m[0.000ms] [34;1m[rows:1][0m SELECT count(*) FROM pg_indexes WHERE tablename = 'generations' AND indexname = 'idx_generations_provider_id' AND schemaname = CURRENT_SCHEMA()
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:49
+[0m[33m[3.118ms] [34;1m[rows:1][0m SELECT count(*) FROM INFORMATION_SCHEMA.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'ai_models' AND column_name = 'provider_id'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:58
+[0m[33m[1.506ms] [34;1m[rows:1][0m SELECT count(*) FROM INFORMATION_SCHEMA.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'skill_ids'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/internal/database/postgres.go:58
+[0m[33m[2.510ms] [34;1m[rows:1][0m SELECT count(*) FROM INFORMATION_SCHEMA.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'conversations' AND column_name = 'mcp_server_ids'
+
+2026/06/10 17:03:43 [32mC:/RadiumCode/model-client/server/seed/seed.go:15
+[0m[33m[1.017ms] [34;1m[rows:1][0m SELECT * FROM "settings" WHERE key = 'initialized' ORDER BY "settings"."key" LIMIT 1
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/auth/send-code       --> modelhub/server/internal/handler.(*AuthHandler).SendCode-fm (4 handlers)
+[GIN-debug] POST   /api/auth/register        --> modelhub/server/internal/handler.(*AuthHandler).Register-fm (4 handlers)
+[GIN-debug] POST   /api/auth/login           --> modelhub/server/internal/handler.(*AuthHandler).Login-fm (4 handlers)
+[GIN-debug] POST   /api/auth/refresh         --> modelhub/server/internal/handler.(*AuthHandler).Refresh-fm (4 handlers)
+[GIN-debug] GET    /api/user/profile         --> modelhub/server/internal/handler.(*AuthHandler).Profile-fm (5 handlers)
+[GIN-debug] GET    /api/models               --> modelhub/server/internal/handler.(*ChatHandler).ListModels-fm (5 handlers)
+[GIN-debug] GET    /api/skills               --> modelhub/server/internal/handler.(*ChatHandler).ListSkills-fm (5 handlers)
+[GIN-debug] GET    /api/mcp-servers          --> modelhub/server/internal/handler.(*ChatHandler).ListMCPServers-fm (5 handlers)
+[GIN-debug] POST   /api/conversations        --> modelhub/server/internal/handler.(*ChatHandler).CreateConversation-fm (5 handlers)
+[GIN-debug] GET    /api/conversations        --> modelhub/server/internal/handler.(*ChatHandler).ListConversations-fm (5 handlers)
+[GIN-debug] GET    /api/conversations/:id    --> modelhub/server/internal/handler.(*ChatHandler).GetMessages-fm (5 handlers)
+[GIN-debug] GET    /api/conversations/:id/info --> modelhub/server/internal/handler.(*ChatHandler).GetConversationInfo-fm (5 handlers)
+[GIN-debug] PATCH  /api/conversations/:id    --> modelhub/server/internal/handler.(*ChatHandler).UpdateConversation-fm (5 handlers)
+[GIN-debug] DELETE /api/conversations/:id    --> modelhub/server/internal/handler.(*ChatHandler).DeleteConversation-fm (5 handlers)
+[GIN-debug] POST   /api/conversations/:id/messages --> modelhub/server/internal/handler.(*ChatHandler).SendMessage-fm (5 handlers)
+[GIN-debug] POST   /api/images/generate      --> modelhub/server/internal/handler.(*GenerationHandler).GenerateImage-fm (5 handlers)
+[GIN-debug] GET    /api/admin/settings       --> modelhub/server/internal/handler.(*AdminHandler).GetSettings-fm (6 handlers)
+[GIN-debug] PUT    /api/admin/settings       --> modelhub/server/internal/handler.(*AdminHandler).UpdateSettings-fm (6 handlers)
+[GIN-debug] GET    /api/admin/providers      --> modelhub/server/internal/handler.(*AdminHandler).ListProviders-fm (6 handlers)
+[GIN-debug] POST   /api/admin/providers      --> modelhub/server/internal/handler.(*AdminHandler).CreateProvider-fm (6 handlers)
+[GIN-debug] PUT    /api/admin/providers/:id  --> modelhub/server/internal/handler.(*AdminHandler).UpdateProvider-fm (6 handlers)
+[GIN-debug] DELETE /api/admin/providers/:id  --> modelhub/server/internal/handler.(*AdminHandler).DeleteProvider-fm (6 handlers)
+[GIN-debug] GET    /api/admin/providers/:id/models --> modelhub/server/internal/handler.(*AdminHandler).GetProviderModels-fm (6 handlers)
+[GIN-debug] PUT    /api/admin/providers/:id/models --> modelhub/server/internal/handler.(*AdminHandler).SetProviderModels-fm (6 handlers)
+[GIN-debug] GET    /api/admin/models         --> modelhub/server/internal/handler.(*AdminHandler).ListModels-fm (6 handlers)
+[GIN-debug] POST   /api/admin/models         --> modelhub/server/internal/handler.(*AdminHandler).CreateModel-fm (6 handlers)
+[GIN-debug] PUT    /api/admin/models/:id     --> modelhub/server/internal/handler.(*AdminHandler).UpdateModel-fm (6 handlers)
+[GIN-debug] DELETE /api/admin/models/:id     --> modelhub/server/internal/handler.(*AdminHandler).DeleteModel-fm (6 handlers)
+[GIN-debug] GET    /api/admin/skills         --> modelhub/server/internal/handler.(*AdminHandler).ListSkills-fm (6 handlers)
+[GIN-debug] POST   /api/admin/skills         --> modelhub/server/internal/handler.(*AdminHandler).CreateSkill-fm (6 handlers)
+[GIN-debug] POST   /api/admin/skills/import  --> modelhub/server/internal/handler.(*AdminHandler).ImportSkills-fm (6 handlers)
+[GIN-debug] PUT    /api/admin/skills/:id     --> modelhub/server/internal/handler.(*AdminHandler).UpdateSkill-fm (6 handlers)
+[GIN-debug] DELETE /api/admin/skills/:id     --> modelhub/server/internal/handler.(*AdminHandler).DeleteSkill-fm (6 handlers)
+[GIN-debug] GET    /api/admin/mcp-servers    --> modelhub/server/internal/handler.(*AdminHandler).ListMCPServers-fm (6 handlers)
+[GIN-debug] POST   /api/admin/mcp-servers    --> modelhub/server/internal/handler.(*AdminHandler).CreateMCPServer-fm (6 handlers)
+[GIN-debug] PUT    /api/admin/mcp-servers/:id --> modelhub/server/internal/handler.(*AdminHandler).UpdateMCPServer-fm (6 handlers)
+[GIN-debug] DELETE /api/admin/mcp-servers/:id --> modelhub/server/internal/handler.(*AdminHandler).DeleteMCPServer-fm (6 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080

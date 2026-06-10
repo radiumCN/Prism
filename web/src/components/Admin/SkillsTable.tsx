@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Table, Button, Modal, Form, Input, Select, Tag, Space,
-  Popconfirm, message as antMessage, Tooltip, Upload, Alert,
+  Popconfirm, App, Tooltip, Upload, Alert,
 } from 'antd';
 import type { UploadFile } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ImportOutlined } from '@ant-design/icons';
@@ -16,6 +16,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function SkillsTable() {
+  const { message: antMessage } = App.useApp();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);

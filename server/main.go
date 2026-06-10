@@ -53,7 +53,7 @@ func main() {
 
 	// Services
 	authSvc := service.NewAuthService(userRepo, rdb, cfg)
-	chatSvc := service.NewChatService(convRepo, msgRepo, modelRepo, providerRepo, providerModelRepo, skillRepo, mcpRepo, cfg)
+	chatSvc := service.NewChatService(convRepo, msgRepo, modelRepo, providerRepo, providerModelRepo, skillRepo, mcpRepo, settingRepo, cfg)
 	adminSvc := service.NewAdminService(providerRepo, modelRepo, providerModelRepo, settingRepo, skillRepo, mcpRepo, cfg)
 
 	// Handlers

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,11 @@ import (
 	"modelhub/server/internal/model"
 	"modelhub/server/internal/repository"
 	"modelhub/server/internal/utils"
+	"net"
+	"net/smtp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type ChatService struct {
@@ -23,6 +28,7 @@ type ChatService struct {
 	providerModelRepo *repository.ProviderModelRepository
 	skillRepo         *repository.SkillRepository
 	mcpRepo           *repository.MCPServerRepository
+	settingRepo       *repository.SettingRepository
 	cfg               *config.Config
 }
 
@@ -34,6 +40,7 @@ func NewChatService(
 	providerModelRepo *repository.ProviderModelRepository,
 	skillRepo *repository.SkillRepository,
 	mcpRepo *repository.MCPServerRepository,
+	settingRepo *repository.SettingRepository,
 	cfg *config.Config,
 ) *ChatService {
 	return &ChatService{
@@ -44,6 +51,7 @@ func NewChatService(
 		providerModelRepo: providerModelRepo,
 		skillRepo:         skillRepo,
 		mcpRepo:           mcpRepo,
+		settingRepo:       settingRepo,
 		cfg:               cfg,
 	}
 }
@@ -177,8 +185,133 @@ func (s *ChatService) buildAdapterMessages(history []model.Message, newContent s
 	return msgs
 }
 
+// builtinEmailTool is the OpenAI-compatible function schema for sending email via SMTP.
+var builtinEmailTool = adapter.Tool{
+	Type: "function",
+	Function: adapter.ToolFunction{
+		Name:        "send_email",
+		Description: "通过 SMTP 发送电子邮件",
+		Parameters: json.RawMessage(`{
+			"type": "object",
+			"properties": {
+				"to":      {"type": "string", "description": "收件人邮箱地址，多个地址用逗号分隔"},
+				"subject":{"type": "string", "description": "邮件主题"},
+				"body":   {"type": "string", "description": "邮件正文（纯文本）"}
+			},
+			"required": ["to", "subject", "body"]
+		}`),
+	},
+}
+
+// sendEmailBuiltin sends an email using system SMTP settings.
+func (s *ChatService) sendEmailBuiltin(to, subject, body string) (string, error) {
+	host, _ := s.settingRepo.Get("smtp_host")
+	portStr, _ := s.settingRepo.Get("smtp_port")
+	user, _ := s.settingRepo.Get("smtp_user")
+	pass, _ := s.settingRepo.Get("smtp_pass")
+
+	if host == "" || user == "" {
+		return "", fmt.Errorf("SMTP 未配置，请在管理后台 → 系统设置中填写 SMTP 信息")
+	}
+	port := 587
+	if p, err := strconv.Atoi(portStr); err == nil && p > 0 {
+		port = p
+	}
+
+	addr := fmt.Sprintf("%s:%d", host, port)
+	msg := []byte("From: " + user + "\r\n" +
+		"To: " + to + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n" +
+		"\r\n" + body + "\r\n")
+
+	// Try STARTTLS first; fall back to plain if port is 465 (implicit TLS)
+	if port == 465 {
+		tlsCfg := &tls.Config{ServerName: host}
+		conn, err := tls.Dial("tcp", addr, tlsCfg)
+		if err != nil {
+			return "", fmt.Errorf("SMTP TLS 连接失败: %w", err)
+		}
+		c, err := smtp.NewClient(conn, host)
+		if err != nil {
+			return "", fmt.Errorf("SMTP 客户端初始化失败: %w", err)
+		}
+		defer c.Quit()
+		if pass != "" {
+			if err := c.Auth(smtp.PlainAuth("", user, pass, host)); err != nil {
+				return "", fmt.Errorf("SMTP 认证失败: %w", err)
+			}
+		}
+		if err := c.Mail(user); err != nil {
+			return "", err
+		}
+		for _, r := range strings.Split(to, ",") {
+			if err := c.Rcpt(strings.TrimSpace(r)); err != nil {
+				return "", fmt.Errorf("收件人 %s 无效: %w", r, err)
+			}
+		}
+		w, err := c.Data()
+		if err != nil {
+			return "", err
+		}
+		if _, err = w.Write(msg); err != nil {
+			return "", err
+		}
+		w.Close()
+	} else {
+		// STARTTLS
+		auth := smtp.PlainAuth("", user, pass, host)
+		netConn, err := net.DialTimeout("tcp", addr, 10*time.Second)
+		if err != nil {
+			return "", fmt.Errorf("SMTP 连接失败: %w", err)
+		}
+		c, err := smtp.NewClient(netConn, host)
+		if err != nil {
+			return "", fmt.Errorf("SMTP 客户端初始化失败: %w", err)
+		}
+		defer c.Quit()
+		if ok, _ := c.Extension("STARTTLS"); ok {
+			tlsCfg := &tls.Config{ServerName: host}
+			if err := c.StartTLS(tlsCfg); err != nil {
+				return "", fmt.Errorf("STARTTLS 失败: %w", err)
+			}
+		}
+		if pass != "" {
+			if err := c.Auth(auth); err != nil {
+				return "", fmt.Errorf("SMTP 认证失败: %w", err)
+			}
+		}
+		if err := c.Mail(user); err != nil {
+			return "", err
+		}
+		for _, r := range strings.Split(to, ",") {
+			if err := c.Rcpt(strings.TrimSpace(r)); err != nil {
+				return "", fmt.Errorf("收件人 %s 无效: %w", r, err)
+			}
+		}
+		w, err := c.Data()
+		if err != nil {
+			return "", err
+		}
+		if _, err = w.Write(msg); err != nil {
+			return "", err
+		}
+		w.Close()
+	}
+	return fmt.Sprintf("邮件已成功发送至 %s", to), nil
+}
+
 // loadMCPTools fetches tool definitions from all MCP servers associated with a conversation.
+// For servers named "Email (SMTP/IMAP)" (or any name containing "email"/"mail"), it injects
+// a built-in send_email tool that uses system SMTP settings instead of requiring an external server.
+// Returns empty if the global mcp_enabled setting is "false".
 func (s *ChatService) loadMCPTools(ctx context.Context, mcpServerIDs string) ([]adapter.Tool, []*adapter.MCPClient) {
+	// Respect the global MCP on/off switch from system settings
+	if enabled, err := s.settingRepo.Get("mcp_enabled"); err == nil && enabled == "false" {
+		log.Printf("[MCP] globally disabled, skipping tool load")
+		return nil, nil
+	}
 	var ids []uint
 	if mcpServerIDs != "" && mcpServerIDs != "[]" {
 		_ = json.Unmarshal([]byte(mcpServerIDs), &ids)
@@ -188,41 +321,85 @@ func (s *ChatService) loadMCPTools(ctx context.Context, mcpServerIDs string) ([]
 	}
 	servers, err := s.mcpRepo.FindByIDs(ids)
 	if err != nil {
+		log.Printf("[MCP] FindByIDs(%v) error: %v", ids, err)
 		return nil, nil
 	}
 
 	var tools []adapter.Tool
 	var clients []*adapter.MCPClient
+	hasBuiltinEmail := false
+
 	for _, sv := range servers {
-		client := adapter.NewMCPClient(sv.URL, sv.AuthHeader)
-		mcpTools, err := client.ListTools(ctx)
-		if err != nil {
+		nameLower := strings.ToLower(sv.Name)
+		// Built-in: Email MCP — use system SMTP instead of an external server
+		if strings.Contains(nameLower, "email") || strings.Contains(nameLower, "mail") ||
+			strings.Contains(nameLower, "smtp") || strings.Contains(nameLower, "imap") {
+			log.Printf("[MCP] server %q mapped to built-in email tool", sv.Name)
+			hasBuiltinEmail = true
 			continue
 		}
+
+		client := adapter.NewMCPClient(sv.URL, sv.AuthHeader)
+		// Initialize handshake (non-fatal if server doesn't require it)
+		_ = client.Initialize(ctx)
+
+		mcpTools, err := client.ListTools(ctx)
+		if err != nil {
+			log.Printf("[MCP] server %q (%s) list tools failed: %v", sv.Name, sv.URL, err)
+			continue
+		}
+		log.Printf("[MCP] server %q loaded %d tools", sv.Name, len(mcpTools))
 		for _, t := range mcpTools {
 			tools = append(tools, t.ToAdapterTool())
 		}
 		clients = append(clients, client)
 	}
+
+	if hasBuiltinEmail {
+		tools = append(tools, builtinEmailTool)
+	}
+
 	return tools, clients
 }
 
-// executeMCPToolCalls runs tool calls against the registered MCP clients and returns
-// the assistant message (with tool_calls) + tool result messages to append.
+// executeMCPToolCalls runs tool calls against the registered MCP clients (or built-in handlers)
+// and returns the assistant message (with tool_calls) + tool result messages to append.
 func (s *ChatService) executeMCPToolCalls(ctx context.Context, toolCalls []adapter.ToolCall, clients []*adapter.MCPClient) []adapter.Message {
 	msgs := []adapter.Message{{Role: "assistant", Content: "", ToolCalls: toolCalls}}
 	for _, tc := range toolCalls {
 		var args map[string]interface{}
 		_ = json.Unmarshal([]byte(tc.Function.Arguments), &args)
 
-		result := fmt.Sprintf("Tool %q not found on any MCP server", tc.Function.Name)
-		for _, c := range clients {
-			res, err := c.CallTool(ctx, tc.Function.Name, args)
-			if err == nil {
+		var result string
+
+		// Handle built-in tools first
+		switch tc.Function.Name {
+		case "send_email":
+			to, _ := args["to"].(string)
+			subject, _ := args["subject"].(string)
+			body, _ := args["body"].(string)
+			log.Printf("[MCP:email] sending to=%q subject=%q", to, subject)
+			res, err := s.sendEmailBuiltin(to, subject, body)
+			if err != nil {
+				result = fmt.Sprintf("邮件发送失败: %s", err.Error())
+				log.Printf("[MCP:email] error: %v", err)
+			} else {
+				result = res
+				log.Printf("[MCP:email] success: %s", result)
+			}
+		default:
+			result = fmt.Sprintf("Tool %q not found on any MCP server", tc.Function.Name)
+			for _, c := range clients {
+				res, err := c.CallTool(ctx, tc.Function.Name, args)
+				if err != nil {
+					log.Printf("[MCP] call tool %q on %s error: %v", tc.Function.Name, c.URL, err)
+					continue
+				}
 				result = res
 				break
 			}
 		}
+
 		msgs = append(msgs, adapter.Message{
 			Role:       "tool",
 			Content:    result,
@@ -234,7 +411,12 @@ func (s *ChatService) executeMCPToolCalls(ctx context.Context, toolCalls []adapt
 
 // getSystemPrompts concatenates the system prompts from all skills attached to a conversation.
 // Multiple prompts are separated by a blank line.
+// Returns empty if the global skill_enabled setting is "false".
 func (s *ChatService) getSystemPrompts(conv *model.Conversation) string {
+	if enabled, err := s.settingRepo.Get("skill_enabled"); err == nil && enabled == "false" {
+		log.Printf("[SKILL] globally disabled, skipping system prompt injection")
+		return ""
+	}
 	log.Printf("[SKILL] convID=%d skill_ids=%q", conv.ID, conv.SkillIDs)
 	if conv.SkillIDs == "" || conv.SkillIDs == "[]" {
 		return ""

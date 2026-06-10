@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { XProvider } from '@ant-design/x';
-import { ConfigProvider, theme } from 'antd';
+import { App, ConfigProvider, theme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 
 const glassTheme = {
@@ -46,7 +46,9 @@ const glassTheme = {
 export function AntdProvider({ children }: { children: React.ReactNode }) {
   return (
     <ConfigProvider theme={glassTheme} locale={zhCN}>
-      <XProvider>{children}</XProvider>
+      <App>
+        <XProvider>{children}</XProvider>
+      </App>
     </ConfigProvider>
   );
 }

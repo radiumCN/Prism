@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Conversations } from '@ant-design/x';
 import type { ConversationsProps } from '@ant-design/x';
-import { Button, Typography, Spin, Modal, Input, message as antMessage } from 'antd';
+import { Button, Typography, Spin, Modal, Input, App } from 'antd';
 import { PlusOutlined, PushpinOutlined, PushpinFilled, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import type { Conversation } from '@/types';
@@ -25,6 +25,7 @@ export default function ConversationSidebar({
   refreshKey = 0,
   onConversationDeleted,
 }: Props) {
+  const { message: antMessage } = App.useApp();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   // Rename modal state

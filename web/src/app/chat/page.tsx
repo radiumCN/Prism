@@ -11,14 +11,19 @@ export default function ChatPage() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const [activeConvKey, setActiveConvKey] = useState<string | undefined>();
-  // Increment to trigger a sidebar reload (e.g. after new conversation created)
   const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     if (!isAuthenticated) {
       router.replace('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [mounted, isAuthenticated, router]);
 
   const conversationId = activeConvKey ? Number(activeConvKey) : null;
 
@@ -31,7 +36,7 @@ export default function ChatPage() {
     setSidebarRefreshKey((k) => k + 1);
   };
 
-  if (!isAuthenticated) return null;
+  if (!mounted || !isAuthenticated) return null;
 
   return (
     <AppLayout

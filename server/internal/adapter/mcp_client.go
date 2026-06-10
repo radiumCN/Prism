@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -87,6 +88,23 @@ func (c *MCPClient) call(ctx context.Context, method string, params interface{})
 		return nil, fmt.Errorf("MCP error %d: %s", rpcResp.Error.Code, rpcResp.Error.Message)
 	}
 	return rpcResp.Result, nil
+}
+
+// Initialize performs the MCP protocol handshake required before any other method.
+// Some servers require this; for servers that don't, the error is ignored.
+func (c *MCPClient) Initialize(ctx context.Context) error {
+	_, err := c.call(ctx, "initialize", map[string]interface{}{
+		"protocolVersion": "2024-11-05",
+		"capabilities":    map[string]interface{}{},
+		"clientInfo": map[string]interface{}{
+			"name":    "ModelHub",
+			"version": "1.0.0",
+		},
+	})
+	if err != nil {
+		log.Printf("[MCP] initialize %q: %v (non-fatal, proceeding)", c.URL, err)
+	}
+	return nil // treat init failure as non-fatal
 }
 
 // ListTools fetches available tools from the MCP server.

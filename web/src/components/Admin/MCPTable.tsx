@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Table, Button, Modal, Form, Input, Select, Tag, Space,
-  Popconfirm, message as antMessage, Tooltip, Tabs, Card,
+  Popconfirm, App, Tooltip, Tabs, Card,
   Row, Col, Badge, Divider, Typography, Alert,
 } from 'antd';
 import {
@@ -511,6 +511,7 @@ const CATEGORIES = ['全部', '热门', ...Array.from(new Set(MARKETPLACE.map((m
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function MCPTable() {
+  const { message: antMessage } = App.useApp();
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);

@@ -10,7 +10,7 @@ import {
 } from '@ant-design/x';
 import { useXChat } from '@ant-design/x-sdk';
 import { XMarkdown } from '@ant-design/x-markdown';
-import { Avatar, Select, Typography, Spin, Tooltip, Button, message as antMessage, Popover, Checkbox, theme, Tag } from 'antd';
+import { Avatar, Select, Typography, Spin, Tooltip, Button, App, Popover, Checkbox, theme, Tag } from 'antd';
 import {
   RobotOutlined, UserOutlined, ThunderboltOutlined,
   CopyOutlined, EditOutlined, ApiOutlined, ToolOutlined, BookOutlined,
@@ -36,6 +36,7 @@ const PROMPTS: PromptsProps['items'] = [
 
 export default function ChatInterface({ conversationId, onConversationCreated }: Props) {
   const { token } = theme.useToken();
+  const { message: antMessage } = App.useApp();
   const accessToken = useAuthStore((s) => s.accessToken) || '';
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
@@ -241,16 +242,16 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
           }))}
         />
 
-        {/* Skill selector */}
-        {skills.length > 0 && (
-          <Popover
-            trigger="click"
-            placement="bottomLeft"
-            content={
-              <div style={{ minWidth: 220 }}>
-                <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
-                  启用 Skill（系统提示词）
-                </div>
+        {/* Skill selector — always visible */}
+        <Popover
+          trigger="click"
+          placement="bottomLeft"
+          content={
+            <div style={{ minWidth: 220 }}>
+              <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                启用 Skill（系统提示词）
+              </div>
+              {skills.length > 0 ? (
                 <Checkbox.Group
                   value={selectedSkillIds}
                   onChange={(vals) => setSelectedSkillIds(vals as number[])}
@@ -265,58 +266,84 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
                     ))}
                   </div>
                 </Checkbox.Group>
-              </div>
-            }
+              ) : (
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                  暂无 Skill，请前往{' '}
+                  <a href="/admin" style={{ color: token.colorPrimary }}>管理后台</a>
+                  {' '}添加
+                </Text>
+              )}
+            </div>
+          }
+        >
+          <Button
+            size="small"
+            icon={<ApiOutlined />}
+            style={{
+              color: selectedSkillIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.5)',
+              borderColor: selectedSkillIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.2)',
+            }}
           >
-            <Button
-              size="small"
-              icon={<ApiOutlined />}
-              style={{
-                color: selectedSkillIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.5)',
-                borderColor: selectedSkillIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.2)',
-              }}
-            >
-              {selectedSkillIds.length > 0 ? `Skill (${selectedSkillIds.length})` : 'Skill'}
-            </Button>
-          </Popover>
-        )}
+            {selectedSkillIds.length > 0 ? `Skill (${selectedSkillIds.length})` : 'Skill'}
+          </Button>
+        </Popover>
 
-        {/* MCP selector */}
-        {mcpServers.length > 0 && (
-          <Popover
-            trigger="click"
-            placement="bottomLeft"
-            content={
-              <div style={{ minWidth: 200 }}>
-                <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
-                  启用 MCP 工具
-                </div>
-                <Checkbox.Group
-                  value={selectedMCPIds}
-                  onChange={(vals) => setSelectedMCPIds(vals as number[])}
-                  disabled={!!conversationId}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {mcpServers.map((sv) => (
-                      <Checkbox key={sv.id} value={sv.id}>{sv.name}</Checkbox>
-                    ))}
-                  </div>
-                </Checkbox.Group>
+        {/* MCP selector — always visible */}
+        <Popover
+          trigger="click"
+          placement="bottomLeft"
+          content={
+            <div style={{ minWidth: 220 }}>
+              <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                启用 MCP 工具
               </div>
-            }
+              {mcpServers.length > 0 ? (
+                <>
+                  {conversationId && (
+                    <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 6 }}>
+                      MCP 在对话创建时绑定，无法更改
+                    </Text>
+                  )}
+                  <Checkbox.Group
+                    value={selectedMCPIds}
+                    onChange={(vals) => setSelectedMCPIds(vals as number[])}
+                    disabled={!!conversationId}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {mcpServers.map((sv) => (
+                        <Checkbox key={sv.id} value={sv.id}>
+                          <span>🔌 {sv.name}</span>
+                          {sv.description && (
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>
+                              — {sv.description}
+                            </span>
+                          )}
+                        </Checkbox>
+                      ))}
+                    </div>
+                  </Checkbox.Group>
+                </>
+              ) : (
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                  暂无 MCP Server，请前往{' '}
+                  <a href="/admin" style={{ color: token.colorPrimary }}>管理后台</a>
+                  {' '}→ MCP 配置 添加
+                </Text>
+              )}
+            </div>
+          }
+        >
+          <Button
+            size="small"
+            icon={<ToolOutlined />}
+            style={{
+              color: selectedMCPIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.5)',
+              borderColor: selectedMCPIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.2)',
+            }}
           >
-            <Button
-              size="small"
-              icon={<ToolOutlined />}
-              style={{
-                color: selectedMCPIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.5)',
-                borderColor: selectedMCPIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.2)',
-              }}
-            >
-              {selectedMCPIds.length > 0 ? `MCP (${selectedMCPIds.length})` : 'MCP'}
-            </Button>
-          </Popover>
-        )}
+            {selectedMCPIds.length > 0 ? `MCP (${selectedMCPIds.length})` : 'MCP'}
+          </Button>
+        </Popover>
 
         {/* Active skill tags for the current conversation */}
         {conversationId && activeConvSkillIds.length > 0 && skills.length > 0 && (
