@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Layout, Avatar, Dropdown, Typography } from 'antd';
+import { Layout, Avatar, Dropdown } from 'antd';
 import {
   MessageOutlined,
   PictureOutlined,
@@ -13,9 +13,9 @@ import {
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
+import ProfileModal from './ProfileModal';
 
 const { Sider } = Layout;
-const { Text } = Typography;
 
 export default function NavRail() {
   const router = useRouter();
@@ -23,6 +23,7 @@ export default function NavRail() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [mounted, setMounted] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   useEffect(() => setMounted(true), []);
   const isAdmin = mounted && user?.role === 'admin';
 
@@ -41,7 +42,7 @@ export default function NavRail() {
   ];
 
   const userMenuItems = [
-    { key: 'settings', icon: <SettingOutlined />, label: '个人设置' },
+    { key: 'settings', icon: <SettingOutlined />, label: '个人设置', onClick: () => setProfileOpen(true) },
     { type: 'divider' as const },
     { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: handleLogout },
   ];
@@ -49,6 +50,7 @@ export default function NavRail() {
   const selectedKey = menuItems.find((m) => pathname.startsWith(m.key))?.key || '/chat';
 
   return (
+    <>
     <Sider
       width={64}
       style={{
@@ -96,5 +98,8 @@ export default function NavRail() {
         </Dropdown>
       </div>
     </Sider>
+
+    <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+    </>
   );
 }

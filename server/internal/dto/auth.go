@@ -35,6 +35,7 @@ type UserInfo struct {
 }
 
 type UpdateProfileRequest struct {
-	Username string `json:"username" binding:"omitempty,min=3,max=50"`
-	Password string `json:"password" binding:"omitempty,min=8"`
+	Username    string `json:"username" binding:"omitempty,min=3,max=50"`
+	OldPassword string `json:"old_password" binding:"omitempty,min=8"`
+	NewPassword string `json:"new_password" binding:"omitempty,min=8"`
 }

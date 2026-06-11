@@ -74,6 +74,25 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 
 func (h *AuthHandler) Profile(c *gin.Context) {
 	userID := middleware.GetUserID(c)
-	role, _ := c.Get("userRole")
-	c.JSON(http.StatusOK, gin.H{"user_id": userID, "role": role})
+	user, err := h.authSvc.GetProfile(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "用户信息获取失败"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	var req dto.UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	user, err := h.authSvc.UpdateProfile(userID, req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, user)
 }

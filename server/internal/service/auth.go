@@ -167,6 +167,63 @@ func (s *AuthService) Refresh(refreshToken string) (*dto.AuthResponse, error) {
 	return s.generateTokenPair(user)
 }
 
+func (s *AuthService) GetProfile(userID uint) (*dto.UserInfo, error) {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.UserInfo{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		Role:     user.Role,
+	}, nil
+}
+
+func (s *AuthService) UpdateProfile(userID uint, req dto.UpdateProfileRequest) (*dto.UserInfo, error) {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return nil, errors.New("用户不存在")
+	}
+
+	// Update username if provided
+	if req.Username != "" && req.Username != user.Username {
+		exists, err := s.userRepo.ExistsByUsername(req.Username)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, errors.New("用户名已被占用")
+		}
+		user.Username = req.Username
+	}
+
+	// Update password if provided
+	if req.NewPassword != "" {
+		if req.OldPassword == "" {
+			return nil, errors.New("请输入当前密码")
+		}
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
+			return nil, errors.New("当前密码错误")
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+		user.PasswordHash = string(hash)
+	}
+
+	if err := s.userRepo.Update(user); err != nil {
+		return nil, err
+	}
+	return &dto.UserInfo{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		Role:     user.Role,
+	}, nil
+}
+
 func (s *AuthService) generateTokenPair(user *model.User) (*dto.AuthResponse, error) {
 	accessToken, err := utils.GenerateAccessToken(user.ID, user.Role, s.cfg.JWT.AccessSecret, s.cfg.JWT.AccessExpiry)
 	if err != nil {

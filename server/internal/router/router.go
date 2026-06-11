@@ -43,6 +43,7 @@ func Setup(
 	protected.Use(middleware.AuthMiddleware(cfg))
 	{
 		protected.GET("/user/profile", authH.Profile)
+		protected.PUT("/user/profile", authH.UpdateProfile)
 		protected.GET("/models", chatH.ListModels)
 		protected.GET("/skills", chatH.ListSkills)
 		protected.GET("/mcp-servers", chatH.ListMCPServers)
