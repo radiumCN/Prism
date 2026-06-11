@@ -262,7 +262,7 @@ export default function VideoPage() {
     if (!mounted) return;
     if (!isAuthenticated) { router.replace('/login'); return; }
     api.get<ModelInfo[]>('/models?type=video').then((list) => setModels(list ?? [])).catch(console.error);
-    loadHistory(true);
+    loadHistory(false);
   }, [mounted, isAuthenticated, router, loadHistory]);
 
   useEffect(() => {

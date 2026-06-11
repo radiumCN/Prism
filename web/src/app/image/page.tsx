@@ -9,6 +9,7 @@ import {
 import {
   PictureOutlined, DownloadOutlined, ReloadOutlined,
   HistoryOutlined, ThunderboltOutlined, ExpandOutlined,
+  CheckCircleOutlined, ClockCircleOutlined, LinkOutlined,
 } from '@ant-design/icons';
 import AppLayout from '@/components/Layout/AppLayout';
 import { useAuthStore } from '@/store/auth';
@@ -16,7 +17,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { ModelInfo } from '@/types';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 interface GeneratedImage {
   id?: number;
@@ -211,6 +212,113 @@ function ImageCard({ img, onExpand }: { img: GeneratedImage; onExpand: (url: str
   );
 }
 
+// ─── Hero display for the latest generated image ─────────────────────────────
+function ImageHero({ img, onExpand }: { img: GeneratedImage; onExpand: (url: string) => void }) {
+  return (
+    <div style={{
+      borderRadius: 20, overflow: 'hidden',
+      border: '1px solid rgba(139,92,246,0.35)',
+      boxShadow: '0 16px 48px rgba(139,92,246,0.2)',
+      background: '#080808',
+      marginBottom: 24,
+    }}>
+      {/* Image area */}
+      <div
+        style={{ position: 'relative', cursor: 'zoom-in' }}
+        onClick={() => onExpand(img.url)}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={img.url}
+          alt={img.prompt}
+          style={{ width: '100%', maxHeight: 520, objectFit: 'contain', display: 'block', background: '#080808' }}
+        />
+        {/* Gradient overlay */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 40%)',
+          pointerEvents: 'none',
+        }} />
+        {/* Hover expand hint */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: 0,
+          transition: 'opacity 0.2s',
+        }}
+          className="img-hero-overlay"
+        >
+          <div style={{
+            width: 56, height: 56, borderRadius: '50%',
+            background: 'rgba(139,92,246,0.8)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 8px 24px rgba(139,92,246,0.4)',
+          }}>
+            <ExpandOutlined style={{ fontSize: 22, color: '#fff' }} />
+          </div>
+        </div>
+        {/* NEW badge */}
+        <div style={{
+          position: 'absolute', top: 14, left: 14,
+          background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+          borderRadius: 20, padding: '3px 10px',
+          fontSize: 11, color: '#fff', fontWeight: 600, letterSpacing: 0.5,
+        }}>
+          NEW
+        </div>
+      </div>
+
+      {/* Info bar */}
+      <div style={{ padding: '16px 20px 18px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <CheckCircleOutlined style={{ fontSize: 18, color: '#a78bfa', marginTop: 2, flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Paragraph
+            ellipsis={{ rows: 2 }}
+            style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, marginBottom: 8, fontWeight: 500 }}
+          >
+            {img.prompt}
+          </Paragraph>
+          <Space size={8} wrap>
+            {img.model && (
+              <Tag style={{ background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', fontSize: 11 }}>
+                {img.model}
+              </Tag>
+            )}
+            {img.createdAt && (
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <ClockCircleOutlined style={{ fontSize: 10 }} />{img.createdAt}
+              </span>
+            )}
+          </Space>
+        </div>
+        <Space>
+          <Tooltip title="展开查看">
+            <Button
+              icon={<ExpandOutlined />}
+              style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', color: '#a78bfa' }}
+              onClick={() => onExpand(img.url)}
+            >展开</Button>
+          </Tooltip>
+          <Tooltip title="下载图片">
+            <Button
+              icon={<DownloadOutlined />}
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
+              onClick={() => downloadImage(img.url, `ai-image-${Date.now()}.png`)}
+            >下载</Button>
+          </Tooltip>
+          <Tooltip title="复制图片链接">
+            <Button
+              icon={<LinkOutlined />}
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
+              onClick={() => navigator.clipboard.writeText(img.url)}
+            />
+          </Tooltip>
+        </Space>
+      </div>
+    </div>
+  );
+}
+
 export default function ImagePage() {
   const { message } = App.useApp();
   const router = useRouter();
@@ -264,7 +372,7 @@ export default function ImagePage() {
     if (!mounted) return;
     if (!isAuthenticated) { router.replace('/login'); return; }
     api.get<ModelInfo[]>('/models?type=image').then((list) => setModels(list ?? [])).catch(console.error);
-    loadHistory(true);
+    loadHistory(false);
   }, [mounted, isAuthenticated, router, loadHistory]);
 
   const handleGenerate = async (values: ImageFormValues) => {
@@ -528,13 +636,23 @@ export default function ImagePage() {
                         </div>
                       )}
                       {images.length > 0 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                          {images.map((img, i) => (
-                            <div key={i} style={i === 0 && images.length === 1 ? { gridColumn: '1 / -1', maxWidth: 600 } : {}}>
-                              <ImageCard img={img} onExpand={setExpandedUrl} />
-                            </div>
-                          ))}
-                        </div>
+                        <>
+                          {/* Latest image — hero display */}
+                          <ImageHero img={images[0]} onExpand={setExpandedUrl} />
+                          {/* Remaining images — compact grid */}
+                          {images.length > 1 && (
+                            <>
+                              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginBottom: 12 }}>
+                                本次其他生成（共 {images.length} 张）
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+                                {images.slice(1).map((img, i) => (
+                                  <ImageCard key={i + 1} img={img} onExpand={setExpandedUrl} />
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </>
                       )}
                     </>
                   ),
