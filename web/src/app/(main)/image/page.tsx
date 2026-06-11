@@ -671,7 +671,7 @@ export default function ImagePage() {
                         <Button
                           size="small"
                           icon={<ReloadOutlined />}
-                          onClick={loadHistory}
+                          onClick={() => loadHistory(false)}
                           loading={historyLoading}
                           style={{ color: 'rgba(255,255,255,0.6)' }}
                         >

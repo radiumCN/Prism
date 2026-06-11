@@ -204,7 +204,7 @@ export default function SkillsTable() {
             title={`成功导入 ${importResult.created} / ${importResult.total} 个 Skill`}
             description={
               (importResult.failed?.length ?? 0) > 0
-                ? <ul style={{ margin: 0, paddingLeft: 16 }}>{importResult.failed.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                ? <ul style={{ margin: 0, paddingLeft: 16 }}>{(importResult.failed ?? []).map((e, i) => <li key={i}>{e}</li>)}</ul>
                 : undefined
             }
           />

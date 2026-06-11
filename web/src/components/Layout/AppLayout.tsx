@@ -1,151 +1,23 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Typography } from 'antd';
-import {
-  MessageOutlined,
-  PictureOutlined,
-  VideoCameraOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  UserOutlined,
-  DashboardOutlined,
-} from '@ant-design/icons';
-import { useRouter, usePathname } from 'next/navigation';
-import { useAuthStore } from '@/store/auth';
+import React from 'react';
+import { Layout } from 'antd';
 
 const { Sider, Content } = Layout;
-const { Text } = Typography;
 
 interface Props {
   children: React.ReactNode;
+  /** Optional secondary sidebar (e.g. conversation list in chat page) */
   sidebar?: React.ReactNode;
 }
 
+/**
+ * Content-level layout wrapper.
+ * The nav rail is handled by the (main) route group layout — do NOT add it here.
+ */
 export default function AppLayout({ children, sidebar }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  // Defer isAdmin until after client mount to prevent SSR/client hydration mismatch
-  // (Zustand reads localStorage on the client but not on the server).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const isAdmin = mounted && user?.role === 'admin';
-
-  const handleLogout = () => {
-    logout();
-    router.replace('/login');
-  };
-
-  const menuItems = [
-    {
-      key: '/chat',
-      icon: <MessageOutlined />,
-      label: '对话',
-      onClick: () => router.push('/chat'),
-    },
-    {
-      key: '/image',
-      icon: <PictureOutlined />,
-      label: '绘图',
-      onClick: () => router.push('/image'),
-    },
-    {
-      key: '/video',
-      icon: <VideoCameraOutlined />,
-      label: '视频',
-      onClick: () => router.push('/video'),
-    },
-    ...(isAdmin
-      ? [
-          {
-            key: '/admin',
-            icon: <DashboardOutlined />,
-            label: '管理',
-            onClick: () => router.push('/admin'),
-          },
-        ]
-      : []),
-  ];
-
-  const userMenuItems = [
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: '个人设置',
-    },
-    { type: 'divider' as const },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      onClick: handleLogout,
-    },
-  ];
-
-  const selectedKey = menuItems.find((m) => pathname.startsWith(m.key))?.key || '/chat';
-
   return (
-    <Layout style={{ height: '100vh', background: 'transparent' }}>
-      {/* Left navigation rail */}
-      <Sider
-        width={64}
-        style={{
-          background: 'rgba(15,12,41,0.6)',
-          backdropFilter: 'blur(16px)',
-          borderRight: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          paddingTop: 8,
-          paddingBottom: 8,
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', gap: 4 }}>
-          {menuItems.map((item) => (
-            <div
-              key={item.key}
-              onClick={item.onClick}
-              style={{
-                width: 44,
-                height: 44,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                cursor: 'pointer',
-                background: selectedKey === item.key ? 'rgba(124,58,237,0.25)' : 'transparent',
-                border: selectedKey === item.key ? '1px solid rgba(124,58,237,0.4)' : '1px solid transparent',
-                color: selectedKey === item.key ? '#a78bfa' : 'rgba(255,255,255,0.5)',
-                fontSize: 18,
-                transition: 'all 0.2s',
-              }}
-              className="glass-hover"
-              title={item.label}
-            >
-              {item.icon}
-            </div>
-          ))}
-
-          <div style={{ flex: 1 }} />
-
-          {/* User avatar */}
-          <Dropdown
-            menu={{ items: userMenuItems }}
-            placement="topLeft"
-            trigger={['click']}
-          >
-            <Avatar
-              style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }}
-              icon={<UserOutlined />}
-            />
-          </Dropdown>
-        </div>
-      </Sider>
-
-      {/* Optional sidebar (conversations list etc.) */}
+    <Layout style={{ flex: 1, overflow: 'hidden', background: 'transparent' }}>
       {sidebar && (
         <Sider
           width={240}
@@ -158,7 +30,6 @@ export default function AppLayout({ children, sidebar }: Props) {
           {sidebar}
         </Sider>
       )}
-
       <Content style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {children}
       </Content>
