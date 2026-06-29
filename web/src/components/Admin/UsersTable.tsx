@@ -43,7 +43,10 @@ export default function UsersTable() {
   const handleUpdate = async (id: number, patch: { role?: string; status?: string }) => {
     const user = users.find((u) => u.id === id);
     if (!user) return;
-    const payload = { role: patch.role ?? user.role, status: patch.status ?? user.status };
+    const payload = {
+      role: (patch.role ?? user.role) as UserRow['role'],
+      status: (patch.status ?? user.status) as UserRow['status'],
+    };
     try {
       await api.put(`/admin/users/${id}`, payload);
       message.success('已更新');
