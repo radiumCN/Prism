@@ -4,10 +4,15 @@ import (
 	"modelhub/server/internal/config"
 	"modelhub/server/internal/handler"
 	"modelhub/server/internal/middleware"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
+
+func ensureDir(path string) error {
+	return os.MkdirAll(path, 0755)
+}
 
 func Setup(
 	cfg *config.Config,
@@ -16,6 +21,8 @@ func Setup(
 	adminH *handler.AdminHandler,
 	genH *handler.GenerationHandler,
 ) *gin.Engine {
+	// Ensure uploads directory exists.
+	_ = ensureDir("./uploads")
 	gin.SetMode(cfg.Server.Mode)
 	r := gin.Default()
 
@@ -26,6 +33,9 @@ func Setup(
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+
+	// Serve uploaded files.
+	r.Static("/uploads", "./uploads")
 
 	api := r.Group("/api")
 
@@ -103,15 +113,30 @@ func Setup(
 		protected.GET("/images/history", genH.ListImageHistory)
 		protected.POST("/videos/generate", genH.GenerateVideo)
 		protected.GET("/videos/history", genH.ListVideoHistory)
+
+		// File upload (images for feedback etc.)
+		protected.POST("/upload", handler.UploadImage)
+
+		// Feedback (any authenticated user can submit / view own)
+		protected.POST("/feedback", adminH.SubmitFeedback)
+		protected.GET("/feedback/mine", adminH.ListMyFeedback)
 	}
 
-	// Admin-only routes — system settings
+	// Admin-only routes
 	admin := api.Group("/admin")
 	admin.Use(middleware.AuthMiddleware(cfg))
 	admin.Use(middleware.AdminMiddleware())
 	{
 		admin.GET("/settings", adminH.GetSettings)
 		admin.PUT("/settings", adminH.UpdateSettings)
+
+		// User management
+		admin.GET("/users", adminH.ListUsers)
+		admin.PUT("/users/:id", adminH.UpdateUser)
+
+		// Feedback management
+		admin.GET("/feedback", adminH.ListFeedback)
+		admin.PUT("/feedback/:id", adminH.UpdateFeedback)
 	}
 
 	return r

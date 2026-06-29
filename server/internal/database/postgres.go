@@ -39,6 +39,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.Conversation{},
 		&model.Message{},
 		&model.Generation{},
+		&model.Feedback{},
 	)
 }
 

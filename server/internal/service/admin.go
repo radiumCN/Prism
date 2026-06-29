@@ -15,6 +15,8 @@ type AdminService struct {
 	settingRepo       *repository.SettingRepository
 	skillRepo         *repository.SkillRepository
 	mcpRepo           *repository.MCPServerRepository
+	userRepo          *repository.UserRepository
+	feedbackRepo      *repository.FeedbackRepository
 	cfg               *config.Config
 }
 
@@ -25,6 +27,8 @@ func NewAdminService(
 	settingRepo *repository.SettingRepository,
 	skillRepo *repository.SkillRepository,
 	mcpRepo *repository.MCPServerRepository,
+	userRepo *repository.UserRepository,
+	feedbackRepo *repository.FeedbackRepository,
 	cfg *config.Config,
 ) *AdminService {
 	return &AdminService{
@@ -34,6 +38,8 @@ func NewAdminService(
 		settingRepo:       settingRepo,
 		skillRepo:         skillRepo,
 		mcpRepo:           mcpRepo,
+		userRepo:          userRepo,
+		feedbackRepo:      feedbackRepo,
 		cfg:               cfg,
 	}
 }
@@ -361,4 +367,46 @@ func (s *AdminService) UpdateMCPServer(userID, id uint, req dto.UpsertMCPServerR
 
 func (s *AdminService) DeleteMCPServer(userID, id uint) error {
 	return s.mcpRepo.Delete(id, userID)
+}
+
+// ---- User Management (admin only) ----
+
+func (s *AdminService) ListUsers() ([]model.User, error) {
+	return s.userRepo.FindAll()
+}
+
+func (s *AdminService) UpdateUser(id uint, req dto.UpdateUserRequest) error {
+	return s.userRepo.UpdateRoleAndStatus(id, req.Role, req.Status)
+}
+
+// ---- Feedback ----
+
+func (s *AdminService) SubmitFeedback(userID uint, req dto.SubmitFeedbackRequest) (*model.Feedback, error) {
+	ft := req.Type
+	if ft == "" {
+		ft = "general"
+	}
+	f := &model.Feedback{
+		UserID:  userID,
+		Type:    ft,
+		Content: req.Content,
+		Images:  model.JSONStrings(req.Images),
+		Status:  "pending",
+	}
+	if err := s.feedbackRepo.Create(f); err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+func (s *AdminService) ListFeedback() ([]model.Feedback, error) {
+	return s.feedbackRepo.FindAll()
+}
+
+func (s *AdminService) ListMyFeedback(userID uint) ([]model.Feedback, error) {
+	return s.feedbackRepo.FindByUserID(userID)
+}
+
+func (s *AdminService) UpdateFeedback(id uint, req dto.UpdateFeedbackRequest) error {
+	return s.feedbackRepo.UpdateStatus(id, req.Status, req.AdminNote)
 }

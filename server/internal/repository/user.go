@@ -63,3 +63,14 @@ func (r *UserRepository) CountAdmins() (int64, error) {
 	err := r.db.Model(&model.User{}).Where("role = ?", "admin").Count(&count).Error
 	return count, err
 }
+
+func (r *UserRepository) FindAll() ([]model.User, error) {
+	var users []model.User
+	err := r.db.Order("created_at DESC").Find(&users).Error
+	return users, err
+}
+
+func (r *UserRepository) UpdateRoleAndStatus(id uint, role, status string) error {
+	return r.db.Model(&model.User{}).Where("id = ?", id).
+		Updates(map[string]interface{}{"role": role, "status": status}).Error
+}

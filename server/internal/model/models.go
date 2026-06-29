@@ -1,8 +1,39 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 )
+
+// JSONStrings stores a []string as a JSON text column in PostgreSQL.
+type JSONStrings []string
+
+func (j JSONStrings) Value() (driver.Value, error) {
+	if j == nil {
+		return "[]", nil
+	}
+	b, err := json.Marshal(j)
+	return string(b), err
+}
+
+func (j *JSONStrings) Scan(value interface{}) error {
+	if value == nil {
+		*j = []string{}
+		return nil
+	}
+	var s string
+	switch v := value.(type) {
+	case string:
+		s = v
+	case []byte:
+		s = string(v)
+	default:
+		return fmt.Errorf("JSONStrings: unsupported type %T", value)
+	}
+	return json.Unmarshal([]byte(s), j)
+}
 
 type User struct {
 	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
@@ -123,6 +154,20 @@ type Message struct {
 	Metadata       string    `gorm:"type:text" json:"metadata"`
 	TokenCount     int       `json:"token_count"`
 	CreatedAt      time.Time `json:"created_at"`
+}
+
+// Feedback holds user-submitted feedback entries.
+type Feedback struct {
+	ID        uint        `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID    uint        `gorm:"not null;index" json:"user_id"`
+	User      *User       `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Type      string      `gorm:"size:20;default:'general'" json:"type"` // general | bug | feature
+	Content   string      `gorm:"type:text;not null" json:"content"`
+	Images    JSONStrings `gorm:"type:text" json:"images"`
+	Status    string      `gorm:"size:20;default:'pending'" json:"status"` // pending | reviewed | closed
+	AdminNote string      `gorm:"type:text" json:"admin_note"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
 }
 
 type Generation struct {

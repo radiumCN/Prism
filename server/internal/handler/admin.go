@@ -423,3 +423,78 @@ func (h *AdminHandler) DeleteMCPServer(c *gin.Context) {
 	}
 	c.JSON(http.StatusNoContent, nil)
 }
+
+// ---- User Management ----
+
+func (h *AdminHandler) ListUsers(c *gin.Context) {
+	users, err := h.adminSvc.ListUsers()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+func (h *AdminHandler) UpdateUser(c *gin.Context) {
+	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	var req dto.UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.adminSvc.UpdateUser(uint(id), req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "updated"})
+}
+
+// ---- Feedback ----
+
+func (h *AdminHandler) SubmitFeedback(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	var req dto.SubmitFeedbackRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	f, err := h.adminSvc.SubmitFeedback(userID, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, f)
+}
+
+func (h *AdminHandler) ListFeedback(c *gin.Context) {
+	list, err := h.adminSvc.ListFeedback()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, list)
+}
+
+func (h *AdminHandler) ListMyFeedback(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	list, err := h.adminSvc.ListMyFeedback(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, list)
+}
+
+func (h *AdminHandler) UpdateFeedback(c *gin.Context) {
+	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	var req dto.UpdateFeedbackRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.adminSvc.UpdateFeedback(uint(id), req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "updated"})
+}

@@ -8,6 +8,8 @@ import ProvidersTable from '@/components/Admin/ProvidersTable';
 import ModelsTable from '@/components/Admin/ModelsTable';
 import SkillsTable from '@/components/Admin/SkillsTable';
 import MCPTable from '@/components/Admin/MCPTable';
+import UsersTable from '@/components/Admin/UsersTable';
+import FeedbackList from '@/components/Admin/FeedbackList';
 import { useAuthStore } from '@/store/auth';
 import { api } from '@/lib/api';
 
@@ -103,6 +105,24 @@ export default function AdminPage() {
               children: (
                 <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                   <MCPTable />
+                </Card>
+              ),
+            },
+            {
+              key: 'users',
+              label: '用户管理',
+              children: (
+                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <UsersTable />
+                </Card>
+              ),
+            },
+            {
+              key: 'feedback',
+              label: '反馈列表',
+              children: (
+                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <FeedbackList />
                 </Card>
               ),
             },

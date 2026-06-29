@@ -58,6 +58,25 @@ type MCPServerResponse struct {
 	Status      string `json:"status"`
 }
 
+// UpdateUserRequest allows admin to change a user's role and status.
+type UpdateUserRequest struct {
+	Role   string `json:"role" binding:"required,oneof=user admin"`
+	Status string `json:"status" binding:"required,oneof=active disabled"`
+}
+
+// SubmitFeedbackRequest is sent by any authenticated user.
+type SubmitFeedbackRequest struct {
+	Type    string   `json:"type" binding:"omitempty,oneof=general bug feature"`
+	Content string   `json:"content" binding:"required,min=1,max=2000"`
+	Images  []string `json:"images"`
+}
+
+// UpdateFeedbackRequest allows admin to review/close feedback.
+type UpdateFeedbackRequest struct {
+	Status    string `json:"status" binding:"required,oneof=pending reviewed closed"`
+	AdminNote string `json:"admin_note"`
+}
+
 // ModelInfo is the response shape for the public /api/models endpoint.
 // It combines model metadata with provider context so the chat UI can
 // display "GPT-4o (OpenAI)" style entries and send both IDs when creating a conversation.
