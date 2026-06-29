@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────
-#  Prism �?Linux Build Script
+#  Prism — Linux/macOS Build Script
 #
 #  Usage:
-#    ./build.sh                   # 使用 VERSION 文件中的版本�?
-#    ./build.sh 1.2.0             # 指定版本号（同时写入 VERSION 文件�?
-#    ./build.sh 1.2.0 --release   # 指定版本�?+ �?git tag
-#    ./build.sh --server-only     # 只编译后�?
-#    ./build.sh --web-only        # 只编译前�?
+#    ./build.sh                    # read version from VERSION file
+#    ./build.sh 1.2.0              # specify version (writes VERSION file)
+#    ./build.sh 1.2.0 --release    # build + create git tag
+#    ./build.sh --server-only      # build Go server only
+#    ./build.sh --web-only         # build Next.js only
 # ──────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VERSION_FILE="$SCRIPT_DIR/VERSION"
 DIST_DIR="$SCRIPT_DIR/dist"
 
-# ── 参数解析 ────────────────────────────────────────────────
+# ── Parse arguments ────────────────────────────────────────────
 BUILD_SERVER=true
 BUILD_WEB=true
 DO_RELEASE=false
@@ -32,101 +32,107 @@ for arg in "$@"; do
       echo "  Usage: ./build.sh [VERSION] [OPTIONS]"
       echo ""
       echo "  Arguments:"
-      echo "    VERSION          版本号，例如 1.2.0（留空则读取 VERSION 文件�?
+      echo "    VERSION          e.g. 1.2.0 (empty = read from VERSION file)"
       echo ""
       echo "  Options:"
-      echo "    --server-only    只编�?Go 后端"
-      echo "    --web-only       只编译前�?
-      echo "    --release        编译完成后打 git tag 并推�?
-      echo "    -h, --help       显示帮助"
+      echo "    --server-only    Build Go server only"
+      echo "    --web-only       Build Next.js only"
+      echo "    --release        Build then create and push git tag"
+      echo "    -h, --help       Show help"
       echo ""
       exit 0
       ;;
-    --*) echo "未知选项: $arg"; exit 1 ;;
+    --*) echo "Unknown option: $arg"; exit 1 ;;
     *)   INPUT_VERSION="$arg" ;;
   esac
 done
 
-# ── 确定版本�?──────────────────────────────────────────────
+# ── Determine version ──────────────────────────────────────────
 if [[ -n "$INPUT_VERSION" ]]; then
   VERSION="$INPUT_VERSION"
   echo "$VERSION" > "$VERSION_FILE"
-  echo "  �?版本号已更新�?$VERSION 并写�?VERSION 文件"
+  echo "  -> VERSION file updated to $VERSION"
 elif [[ -f "$VERSION_FILE" ]]; then
   VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")"
 else
-  echo "错误：未指定版本号且 VERSION 文件不存在�? >&2
+  echo "Error: no version specified and VERSION file not found." >&2
   exit 1
 fi
 
-# ── 构建元信�?──────────────────────────────────────────────
+# ── Build metadata ─────────────────────────────────────────────
 GIT_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
 BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 LDFLAGS="-s -w \
-  -X Prism/server/internal/version.Version=${VERSION} \
-  -X Prism/server/internal/version.GitCommit=${GIT_COMMIT} \
-  -X Prism/server/internal/version.BuildTime=${BUILD_TIME}"
+  -X modelhub/server/internal/version.Version=${VERSION} \
+  -X modelhub/server/internal/version.GitCommit=${GIT_COMMIT} \
+  -X modelhub/server/internal/version.BuildTime=${BUILD_TIME}"
 
-# ── 打印摘要 ────────────────────────────────────────────────
+# ── Print summary ──────────────────────────────────────────────
 echo ""
-echo "══════════════════════════════════════════"
+echo "────────────────────────────────────────"
 echo "  Prism Build"
 echo "  Version  : $VERSION"
 echo "  Commit   : $GIT_COMMIT"
 echo "  Time     : $BUILD_TIME"
-echo "══════════════════════════════════════════"
+echo "────────────────────────────────────────"
 echo ""
 
 mkdir -p "$DIST_DIR"
 
-# ── 编译后端 ────────────────────────────────────────────────
+# ── Build server ───────────────────────────────────────────────
 if [[ "$BUILD_SERVER" == true ]]; then
-  echo "�?编译后端 Go 服务..."
+  echo "▸ Building Go server..."
   cd "$SCRIPT_DIR/server"
-  go build -ldflags "$LDFLAGS" -o "$DIST_DIR/Prism-server" ./main.go
-  chmod +x "$DIST_DIR/Prism-server"
-  echo "  �?$DIST_DIR/Prism-server  �?
+  go build -ldflags "$LDFLAGS" -o "$DIST_DIR/prism-server" ./main.go
+  chmod +x "$DIST_DIR/prism-server"
+  echo "  -> $DIST_DIR/prism-server"
   cd "$SCRIPT_DIR"
 fi
 
-# ── 编译前端 ────────────────────────────────────────────────
+# ── Build web ──────────────────────────────────────────────────
 if [[ "$BUILD_WEB" == true ]]; then
   echo ""
-  echo "�?编译前端 Next.js..."
+  echo "▸ Building Next.js frontend..."
   cd "$SCRIPT_DIR/web"
   npm run build
-  echo "  �?web/.next  �?
+  echo "  -> web/.next"
   cd "$SCRIPT_DIR"
 fi
 
-# ── 打包产物（可选）────────────────────────────────────────
-echo ""
-echo "�?生成发行�?.."
-ARCHIVE="$DIST_DIR/Prism-${VERSION}-linux-amd64.tar.gz"
-tar -czf "$ARCHIVE" \
-  -C "$DIST_DIR" Prism-server \
-  -C "$SCRIPT_DIR" VERSION
-echo "  �?$ARCHIVE  �?
-
-# ── Git Tag�?-release 模式）────────────────────────────────
-if [[ "$DO_RELEASE" == true ]]; then
+# ── Package release archive ────────────────────────────────────
+if [[ "$BUILD_SERVER" == true ]]; then
   echo ""
-  echo "�?�?git tag v${VERSION}..."
-  git tag -a "v${VERSION}" -m "Release v${VERSION}"
-  git push origin "v${VERSION}"
-  echo "  �?tag v${VERSION} 已推�? �?
+  echo "▸ Creating release archive..."
+  ARCHIVE="$DIST_DIR/prism-${VERSION}-linux-amd64.tar.gz"
+  tar -czf "$ARCHIVE" \
+    -C "$DIST_DIR" prism-server \
+    -C "$SCRIPT_DIR" VERSION
+  echo "  -> $ARCHIVE"
 fi
 
-# ── 完成 ────────────────────────────────────────────────────
+# ── Git tag (--release mode) ───────────────────────────────────
+if [[ "$DO_RELEASE" == true ]]; then
+  echo ""
+  echo "▸ Tagging v${VERSION}..."
+  git tag -a "v${VERSION}" -m "Release v${VERSION}"
+  git push origin "v${VERSION}"
+  echo "  -> tag v${VERSION} pushed"
+fi
+
+# ── Done ───────────────────────────────────────────────────────
 echo ""
-echo "══════════════════════════════════════════"
-echo "  �?构建完成  v${VERSION}"
-echo "══════════════════════════════════════════"
+echo "────────────────────────────────────────"
+echo "  Build complete: v${VERSION}"
+echo "────────────────────────────────────────"
 echo ""
-echo "  后端二进�?: $DIST_DIR/Prism-server"
-echo "  发行�?    : $ARCHIVE"
+if [[ "$BUILD_SERVER" == true ]]; then
+  echo "  Server binary : $DIST_DIR/prism-server"
+fi
+if [[ "$BUILD_SERVER" == true ]]; then
+  echo "  Release archive: $DIST_DIR/prism-${VERSION}-linux-amd64.tar.gz"
+fi
 echo ""
-echo "  启动命令�?
-echo "    cd server && $DIST_DIR/Prism-server"
+echo "  Start command:"
+echo "    $DIST_DIR/prism-server"
 echo ""
