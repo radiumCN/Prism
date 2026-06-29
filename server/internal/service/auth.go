@@ -22,13 +22,19 @@ const codeKeyPrefix = "verify:code:"
 const cooldownKeyPrefix = "verify:cooldown:"
 
 type AuthService struct {
-	userRepo *repository.UserRepository
-	rdb      *redis.Client
-	cfg      *config.Config
+	userRepo   *repository.UserRepository
+	ossRepo    *repository.UserOSSConfigRepository
+	rdb        *redis.Client
+	cfg        *config.Config
 }
 
-func NewAuthService(userRepo *repository.UserRepository, rdb *redis.Client, cfg *config.Config) *AuthService {
-	return &AuthService{userRepo: userRepo, rdb: rdb, cfg: cfg}
+func NewAuthService(
+	userRepo *repository.UserRepository,
+	ossRepo *repository.UserOSSConfigRepository,
+	rdb *redis.Client,
+	cfg *config.Config,
+) *AuthService {
+	return &AuthService{userRepo: userRepo, ossRepo: ossRepo, rdb: rdb, cfg: cfg}
 }
 
 // SendVerificationCode 生成 6 位验证码，存入 Redis 并发送邮件。
@@ -243,4 +249,94 @@ func (s *AuthService) generateTokenPair(user *model.User) (*dto.AuthResponse, er
 			Role:     user.Role,
 		},
 	}, nil
+}
+
+// ---- Per-user OSS configuration ----
+
+type OSSConfigResponse struct {
+	Provider   string `json:"provider"`
+	SecretID   string `json:"secret_id"`   // masked on read
+	SecretKey  string `json:"secret_key"`  // masked on read
+	Bucket     string `json:"bucket"`
+	Region     string `json:"region"`
+	BaseURL    string `json:"base_url"`
+	PathPrefix string `json:"path_prefix"`
+}
+
+type UpsertOSSConfigRequest struct {
+	Provider   string `json:"provider"`
+	SecretID   string `json:"secret_id"`
+	SecretKey  string `json:"secret_key"`
+	Bucket     string `json:"bucket"`
+	Region     string `json:"region"`
+	BaseURL    string `json:"base_url"`
+	PathPrefix string `json:"path_prefix"`
+}
+
+func (s *AuthService) GetOSSConfig(userID uint) (*OSSConfigResponse, error) {
+	cfg, err := s.ossRepo.FindByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if cfg == nil {
+		return &OSSConfigResponse{Provider: "none"}, nil
+	}
+	resp := &OSSConfigResponse{
+		Provider:   cfg.Provider,
+		Bucket:     cfg.Bucket,
+		Region:     cfg.Region,
+		BaseURL:    cfg.BaseURL,
+		PathPrefix: cfg.PathPrefix,
+	}
+	// Mask stored credentials: show only whether they are set
+	if cfg.SecretID != "" {
+		resp.SecretID = "••••••••"
+	}
+	if cfg.SecretKey != "" {
+		resp.SecretKey = "••••••••"
+	}
+	return resp, nil
+}
+
+func (s *AuthService) UpsertOSSConfig(userID uint, req UpsertOSSConfigRequest) error {
+	existing, err := s.ossRepo.FindByUserID(userID)
+	if err != nil {
+		return err
+	}
+
+	cfg := &model.UserOSSConfig{
+		UserID:     userID,
+		Provider:   req.Provider,
+		Bucket:     req.Bucket,
+		Region:     req.Region,
+		BaseURL:    req.BaseURL,
+		PathPrefix: req.PathPrefix,
+	}
+	if existing != nil {
+		cfg.ID = existing.ID
+		cfg.CreatedAt = existing.CreatedAt
+	}
+
+	// Only update credentials if the user sent non-masked values
+	encryptOrKeep := func(newVal, existingEncrypted string) string {
+		if newVal == "" || newVal == "••••••••" {
+			return existingEncrypted
+		}
+		enc, err := utils.EncryptAES(s.cfg.AES.Key, newVal)
+		if err != nil {
+			return newVal
+		}
+		return enc
+	}
+
+	existingSecretID := ""
+	existingSecretKey := ""
+	if existing != nil {
+		existingSecretID = existing.SecretID
+		existingSecretKey = existing.SecretKey
+	}
+	cfg.SecretID = encryptOrKeep(req.SecretID, existingSecretID)
+	cfg.SecretKey = encryptOrKeep(req.SecretKey, existingSecretKey)
+
+	return s.ossRepo.Upsert(cfg)
 }

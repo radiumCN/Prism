@@ -1,19 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal, Form, Input, Button, Tabs, Avatar, Typography,
-  Divider, Tag, App, Space,
+  Divider, Tag, App, Space, Select, Alert,
 } from 'antd';
 import {
   UserOutlined, LockOutlined, MailOutlined,
-  EditOutlined, SafetyOutlined,
+  EditOutlined, SafetyOutlined, CloudOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/auth';
 import { api } from '@/lib/api';
 import type { User } from '@/types';
 
 const { Text } = Typography;
+
+interface OSSConfig {
+  provider: string;
+  secret_id: string;
+  secret_key: string;
+  bucket: string;
+  region: string;
+  base_url: string;
+  path_prefix: string;
+}
+
+const REGION_HINT: Record<string, string> = {
+  tencent_cos: '例：ap-guangzhou、ap-beijing、ap-shanghai',
+  aliyun_oss: '例：oss-cn-hangzhou、oss-cn-shanghai、oss-cn-shenzhen',
+};
 
 interface Props {
   open: boolean;
@@ -26,8 +41,23 @@ export default function ProfileModal({ open, onClose }: Props) {
   const updateUser = useAuthStore((s) => s.updateUser);
   const [usernameForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  const [ossForm] = Form.useForm();
   const [savingUsername, setSavingUsername] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [savingOSS, setSavingOSS] = useState(false);
+  const [ossProvider, setOssProvider] = useState('none');
+
+  const loadOSSConfig = useCallback(async () => {
+    try {
+      const cfg = await api.get<OSSConfig>('/user/oss-config');
+      ossForm.setFieldsValue(cfg);
+      setOssProvider(cfg.provider ?? 'none');
+    } catch { /* ignore */ }
+  }, [ossForm]);
+
+  useEffect(() => {
+    if (open) loadOSSConfig();
+  }, [open, loadOSSConfig]);
 
   const handleUpdateUsername = async (values: { username: string }) => {
     setSavingUsername(true);
@@ -66,6 +96,18 @@ export default function ProfileModal({ open, onClose }: Props) {
     }
   };
 
+  const handleSaveOSS = async (values: OSSConfig) => {
+    setSavingOSS(true);
+    try {
+      await api.put('/user/oss-config', values);
+      message.success('OSS 配置已保存');
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '保存失败');
+    } finally {
+      setSavingOSS(false);
+    }
+  };
+
   const roleColor = user?.role === 'admin' ? 'purple' : 'blue';
   const roleLabel = user?.role === 'admin' ? '管理员' : '普通用户';
 
@@ -78,36 +120,47 @@ export default function ProfileModal({ open, onClose }: Props) {
       width={480}
       destroyOnHidden
       styles={{
-        content: { background: 'rgba(15,12,41,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 0 },
+        content: {
+          background: 'rgba(15,12,41,0.98)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 16,
+          padding: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '90vh',
+          overflow: 'hidden',
+        },
+        body: { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' },
         mask: { backdropFilter: 'blur(4px)' },
       }}
     >
-      {/* Header */}
+      {/* Header — 固定不滚动 */}
       <div style={{
-        padding: '28px 28px 20px',
+        padding: '20px 24px 16px',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex', alignItems: 'center', gap: 16,
+        display: 'flex', alignItems: 'center', gap: 14,
+        flexShrink: 0,
       }}>
         <Avatar
-          size={56}
-          style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', flexShrink: 0, fontSize: 22 }}
+          size={48}
+          style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', flexShrink: 0, fontSize: 20 }}
           icon={<UserOutlined />}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 17, fontWeight: 600, marginBottom: 4 }}>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: 600, marginBottom: 3 }}>
             {user?.username}
           </div>
           <Space size={8}>
-            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <MailOutlined style={{ fontSize: 12 }} />{user?.email}
+            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <MailOutlined style={{ fontSize: 11 }} />{user?.email}
             </span>
             <Tag color={roleColor} style={{ margin: 0, fontSize: 11 }}>{roleLabel}</Tag>
           </Space>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ padding: '0 28px 24px' }}>
+      {/* Tabs — 可滚动区域 */}
+      <div style={{ padding: '0 24px 20px', overflowY: 'auto', flex: 1 }}>
         <Tabs
           defaultActiveKey="username"
           style={{ color: 'rgba(255,255,255,0.7)' }}
@@ -144,6 +197,106 @@ export default function ProfileModal({ open, onClose }: Props) {
                       style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', border: 'none' }}
                     >
                       保存用户名
+                    </Button>
+                  </Form.Item>
+                </Form>
+              ),
+            },
+            {
+              key: 'oss',
+              label: (
+                <span><CloudOutlined style={{ marginRight: 4 }} />对象存储</span>
+              ),
+              children: (
+                <Form
+                  form={ossForm}
+                  layout="vertical"
+                  onFinish={handleSaveOSS}
+                  size="small"
+                  style={{ paddingTop: 8 }}
+                >
+                  <Alert
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 12, fontSize: 11 }}
+                    description="部分 AI 绘图接口（如 Gemini）返回 base64 数据，配置 OSS 后自动上传并以 URL 保存，降低数据库压力。不配置时使用本地磁盘。"
+                  />
+
+                  {/* Provider row + credential row on same line when possible */}
+                  <Form.Item name="provider" label={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>存储提供商</Text>} style={{ marginBottom: 10 }}>
+                    <Select
+                      onChange={(v) => setOssProvider(v)}
+                      options={[
+                        { label: '本地磁盘（不启用 OSS）', value: 'none' },
+                        { label: '腾讯云 COS', value: 'tencent_cos' },
+                        { label: '阿里云 OSS', value: 'aliyun_oss' },
+                      ]}
+                    />
+                  </Form.Item>
+
+                  {ossProvider !== 'none' && (<>
+                    {/* Credentials — two columns */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
+                      <Form.Item
+                        name="secret_id"
+                        label={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>SecretId / AK ID</Text>}
+                        style={{ marginBottom: 10 }}
+                      >
+                        <Input.Password placeholder="留空则不修改" />
+                      </Form.Item>
+                      <Form.Item
+                        name="secret_key"
+                        label={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>SecretKey / AK Secret</Text>}
+                        style={{ marginBottom: 10 }}
+                      >
+                        <Input.Password placeholder="留空则不修改" />
+                      </Form.Item>
+                    </div>
+
+                    {/* Bucket + Region — two columns */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
+                      <Form.Item
+                        name="bucket"
+                        label={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Bucket</Text>}
+                        style={{ marginBottom: 10 }}
+                      >
+                        <Input placeholder="my-bucket" />
+                      </Form.Item>
+                      <Form.Item
+                        name="region"
+                        label={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>地域</Text>}
+                        tooltip={REGION_HINT[ossProvider]}
+                        style={{ marginBottom: 10 }}
+                      >
+                        <Input placeholder={ossProvider === 'tencent_cos' ? 'ap-guangzhou' : 'oss-cn-hangzhou'} />
+                      </Form.Item>
+                    </div>
+
+                    {/* Optional fields — two columns */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
+                      <Form.Item
+                        name="base_url"
+                        label={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>自定义域名（可选）</Text>}
+                        style={{ marginBottom: 10 }}
+                      >
+                        <Input placeholder="https://cdn.example.com" />
+                      </Form.Item>
+                      <Form.Item
+                        name="path_prefix"
+                        label={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>路径前缀（可选）</Text>}
+                        style={{ marginBottom: 10 }}
+                      >
+                        <Input placeholder="generations/" />
+                      </Form.Item>
+                    </div>
+                  </>)}
+
+                  <Form.Item style={{ marginBottom: 0, marginTop: 4 }}>
+                    <Button
+                      type="primary" htmlType="submit" loading={savingOSS}
+                      style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', border: 'none' }}
+                    >
+                      保存 OSS 配置
                     </Button>
                   </Form.Item>
                 </Form>

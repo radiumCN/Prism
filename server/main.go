@@ -8,6 +8,7 @@ import (
 	"modelhub/server/internal/repository"
 	"modelhub/server/internal/router"
 	"modelhub/server/internal/service"
+	"modelhub/server/internal/storage"
 	"modelhub/server/seed"
 )
 
@@ -55,17 +56,21 @@ func main() {
 	skillRepo := repository.NewSkillRepository(db)
 	mcpRepo := repository.NewMCPServerRepository(db)
 	feedbackRepo := repository.NewFeedbackRepository(db)
+	ossRepo := repository.NewUserOSSConfigRepository(db)
 
 	// Services
-	authSvc := service.NewAuthService(userRepo, rdb, cfg)
+	authSvc := service.NewAuthService(userRepo, ossRepo, rdb, cfg)
 	chatSvc := service.NewChatService(convRepo, msgRepo, modelRepo, providerRepo, providerModelRepo, skillRepo, mcpRepo, settingRepo, cfg)
 	adminSvc := service.NewAdminService(providerRepo, modelRepo, providerModelRepo, settingRepo, skillRepo, mcpRepo, userRepo, feedbackRepo, cfg)
+
+	localBaseURL := "http://localhost:" + cfg.Server.Port
+	storageSvc := storage.NewService(ossRepo, cfg.AES.Key, localBaseURL)
 
 	// Handlers
 	authH := handler.NewAuthHandler(authSvc)
 	chatH := handler.NewChatHandler(chatSvc)
 	adminH := handler.NewAdminHandler(adminSvc)
-	genH := handler.NewGenerationHandler(modelRepo, providerRepo, providerModelRepo, db, cfg)
+	genH := handler.NewGenerationHandler(modelRepo, providerRepo, providerModelRepo, db, cfg, storageSvc)
 
 	r := router.Setup(cfg, authH, chatH, adminH, genH)
 

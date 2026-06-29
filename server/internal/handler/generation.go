@@ -7,6 +7,7 @@ import (
 	"modelhub/server/internal/middleware"
 	"modelhub/server/internal/model"
 	"modelhub/server/internal/repository"
+	"modelhub/server/internal/storage"
 	"modelhub/server/internal/utils"
 	"net/http"
 	"strings"
@@ -21,6 +22,7 @@ type GenerationHandler struct {
 	providerModelRepo *repository.ProviderModelRepository
 	db                *gorm.DB
 	cfg               *config.Config
+	storageSvc        *storage.Service
 }
 
 func NewGenerationHandler(
@@ -29,6 +31,7 @@ func NewGenerationHandler(
 	providerModelRepo *repository.ProviderModelRepository,
 	db *gorm.DB,
 	cfg *config.Config,
+	storageSvc *storage.Service,
 ) *GenerationHandler {
 	return &GenerationHandler{
 		modelRepo:         modelRepo,
@@ -36,6 +39,7 @@ func NewGenerationHandler(
 		providerModelRepo: providerModelRepo,
 		db:                db,
 		cfg:               cfg,
+		storageSvc:        storageSvc,
 	}
 }
 
@@ -109,6 +113,9 @@ func (h *GenerationHandler) GenerateImage(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Convert base64 data URIs (e.g. from Gemini) to persistent storage URLs.
+	urls = h.storageSvc.ProcessURLs(c.Request.Context(), userID, urls)
 
 	resultURL := strings.Join(urls, "\n")
 	h.db.Model(gen).Updates(map[string]interface{}{"status": "completed", "result_url": resultURL})
@@ -195,6 +202,9 @@ func (h *GenerationHandler) GenerateVideo(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Convert base64 data URIs to persistent storage URLs if necessary.
+	videoURL = h.storageSvc.ProcessURL(c.Request.Context(), userID, videoURL)
 
 	h.db.Model(gen).Updates(map[string]interface{}{"status": "completed", "result_url": videoURL})
 	c.JSON(http.StatusOK, gin.H{

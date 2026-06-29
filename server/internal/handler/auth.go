@@ -96,3 +96,27 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, user)
 }
+
+func (h *AuthHandler) GetOSSConfig(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	cfg, err := h.authSvc.GetOSSConfig(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, cfg)
+}
+
+func (h *AuthHandler) UpsertOSSConfig(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	var req service.UpsertOSSConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.authSvc.UpsertOSSConfig(userID, req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "已保存"})
+}

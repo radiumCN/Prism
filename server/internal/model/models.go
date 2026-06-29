@@ -156,6 +156,21 @@ type Message struct {
 	CreatedAt      time.Time `json:"created_at"`
 }
 
+// UserOSSConfig stores per-user cloud object storage configuration.
+type UserOSSConfig struct {
+	ID          uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID      uint      `gorm:"uniqueIndex;not null" json:"user_id"`
+	Provider    string    `gorm:"size:30;default:'none'" json:"provider"`  // none | tencent_cos | aliyun_oss
+	SecretID    string    `gorm:"size:500" json:"-"`                        // encrypted
+	SecretKey   string    `gorm:"size:500" json:"-"`                        // encrypted
+	Bucket      string    `gorm:"size:200" json:"bucket"`
+	Region      string    `gorm:"size:100" json:"region"`
+	BaseURL     string    `gorm:"size:500" json:"base_url"`
+	PathPrefix  string    `gorm:"size:200" json:"path_prefix"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // Feedback holds user-submitted feedback entries.
 type Feedback struct {
 	ID        uint        `gorm:"primaryKey;autoIncrement" json:"id"`

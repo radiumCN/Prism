@@ -40,6 +40,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.Message{},
 		&model.Generation{},
 		&model.Feedback{},
+		&model.UserOSSConfig{},
 	)
 }
 

@@ -54,6 +54,8 @@ func Setup(
 	{
 		protected.GET("/user/profile", authH.Profile)
 		protected.PUT("/user/profile", authH.UpdateProfile)
+		protected.GET("/user/oss-config", authH.GetOSSConfig)
+		protected.PUT("/user/oss-config", authH.UpsertOSSConfig)
 
 		// Provider management (per-user)
 		providers := protected.Group("/providers")
