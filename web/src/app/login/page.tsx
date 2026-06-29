@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, SafetyOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
-import type { AuthResponse } from '@/types';
+import type { AuthResponse, PublicSiteConfig } from '@/types';
 import styles from './login.module.css';
 
 type Tab = 'login' | 'register';
@@ -16,10 +16,29 @@ export default function LoginPage() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('login');
+  const [registrationOpen, setRegistrationOpen] = useState(false);
+  const [siteName, setSiteName] = useState('Prism');
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [codeSending, setCodeSending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [registerForm] = Form.useForm();
+
+  useEffect(() => {
+    api.get<PublicSiteConfig>('/site/config')
+      .then((config) => {
+        setSiteName(config.site_name || 'Prism');
+        setRegistrationOpen(config.registration_open);
+        if (!config.registration_open) {
+          setActiveTab('login');
+        }
+      })
+      .catch(() => {
+        setRegistrationOpen(false);
+        setActiveTab('login');
+      })
+      .finally(() => setConfigLoaded(true));
+  }, []);
 
   const handleLogin = async (values: { account: string; password: string }) => {
     setLoading(true);
@@ -88,32 +107,34 @@ export default function LoginPage() {
           <div className={styles.logoIcon}>
             <img src="/icon.png" alt="Prism" className={styles.logoImg} />
           </div>
-          <h1 className={styles.logoTitle}>Prism</h1>
+          <h1 className={styles.logoTitle}>{siteName}</h1>
           <p className={styles.logoSub}>AI 模型聚合平台</p>
         </div>
 
-        {/* Tab switcher */}
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${activeTab === 'login' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('login')}
-          >
-            登 录
-          </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'register' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('register')}
-          >
-            注 册
-          </button>
-          <div
-            className={styles.tabSlider}
-            style={{ transform: activeTab === 'register' ? 'translateX(100%)' : 'translateX(0)' }}
-          />
-        </div>
+        {/* Tab switcher — only when registration is open */}
+        {configLoaded && registrationOpen && (
+          <div className={styles.tabs}>
+            <button
+              className={`${styles.tab} ${activeTab === 'login' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('login')}
+            >
+              登 录
+            </button>
+            <button
+              className={`${styles.tab} ${activeTab === 'register' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('register')}
+            >
+              注 册
+            </button>
+            <div
+              className={styles.tabSlider}
+              style={{ transform: activeTab === 'register' ? 'translateX(100%)' : 'translateX(0)' }}
+            />
+          </div>
+        )}
 
         {/* Login form */}
-        {activeTab === 'login' && (
+        {(activeTab === 'login' || !registrationOpen) && (
           <Form onFinish={handleLogin} layout="vertical" size="large" className={styles.form}>
             <Form.Item
               name="account"
@@ -150,7 +171,7 @@ export default function LoginPage() {
         )}
 
         {/* Register form */}
-        {activeTab === 'register' && (
+        {configLoaded && registrationOpen && activeTab === 'register' && (
           <Form form={registerForm} onFinish={handleRegister} layout="vertical" size="large" className={styles.form}>
             <Form.Item
               name="username"

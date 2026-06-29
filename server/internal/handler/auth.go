@@ -17,6 +17,15 @@ func NewAuthHandler(authSvc *service.AuthService) *AuthHandler {
 	return &AuthHandler{authSvc: authSvc}
 }
 
+func (h *AuthHandler) PublicConfig(c *gin.Context) {
+	cfg, err := h.authSvc.GetPublicConfig()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "配置获取失败"})
+		return
+	}
+	c.JSON(http.StatusOK, cfg)
+}
+
 func (h *AuthHandler) SendCode(c *gin.Context) {
 	var req dto.SendCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

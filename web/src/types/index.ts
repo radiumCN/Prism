@@ -11,6 +11,11 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface PublicSiteConfig {
+  site_name: string;
+  registration_open: boolean;
+}
+
 /** Pure model definition, independent of any provider. */
 export interface AIModel {
   id: number;

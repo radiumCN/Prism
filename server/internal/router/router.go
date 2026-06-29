@@ -50,6 +50,9 @@ func Setup(
 		})
 	})
 
+	// Public site config — no auth
+	api.GET("/site/config", authH.PublicConfig)
+
 	// Public auth routes
 	auth := api.Group("/auth")
 	{

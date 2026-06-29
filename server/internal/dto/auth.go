@@ -39,3 +39,8 @@ type UpdateProfileRequest struct {
 	OldPassword string `json:"old_password" binding:"omitempty,min=8"`
 	NewPassword string `json:"new_password" binding:"omitempty,min=8"`
 }
+
+type PublicSiteConfig struct {
+	SiteName         string `json:"site_name"`
+	RegistrationOpen bool   `json:"registration_open"`
+}

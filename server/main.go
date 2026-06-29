@@ -59,7 +59,7 @@ func main() {
 	ossRepo := repository.NewUserOSSConfigRepository(db)
 
 	// Services
-	authSvc := service.NewAuthService(userRepo, ossRepo, rdb, cfg)
+	authSvc := service.NewAuthService(userRepo, ossRepo, settingRepo, rdb, cfg)
 	chatSvc := service.NewChatService(convRepo, msgRepo, modelRepo, providerRepo, providerModelRepo, skillRepo, mcpRepo, settingRepo, cfg)
 	adminSvc := service.NewAdminService(providerRepo, modelRepo, providerModelRepo, settingRepo, skillRepo, mcpRepo, userRepo, feedbackRepo, cfg)
 

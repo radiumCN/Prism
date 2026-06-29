@@ -22,24 +22,49 @@ const codeKeyPrefix = "verify:code:"
 const cooldownKeyPrefix = "verify:cooldown:"
 
 type AuthService struct {
-	userRepo   *repository.UserRepository
-	ossRepo    *repository.UserOSSConfigRepository
-	rdb        *redis.Client
-	cfg        *config.Config
+	userRepo    *repository.UserRepository
+	ossRepo     *repository.UserOSSConfigRepository
+	settingRepo *repository.SettingRepository
+	rdb         *redis.Client
+	cfg         *config.Config
 }
 
 func NewAuthService(
 	userRepo *repository.UserRepository,
 	ossRepo *repository.UserOSSConfigRepository,
+	settingRepo *repository.SettingRepository,
 	rdb *redis.Client,
 	cfg *config.Config,
 ) *AuthService {
-	return &AuthService{userRepo: userRepo, ossRepo: ossRepo, rdb: rdb, cfg: cfg}
+	return &AuthService{userRepo: userRepo, ossRepo: ossRepo, settingRepo: settingRepo, rdb: rdb, cfg: cfg}
+}
+
+func (s *AuthService) isRegistrationOpen() bool {
+	val, err := s.settingRepo.Get("registration_open")
+	if err != nil {
+		return false
+	}
+	return val == "true"
+}
+
+func (s *AuthService) GetPublicConfig() (*dto.PublicSiteConfig, error) {
+	siteName := "Prism"
+	if v, err := s.settingRepo.Get("site_name"); err == nil && v != "" {
+		siteName = v
+	}
+	return &dto.PublicSiteConfig{
+		SiteName:         siteName,
+		RegistrationOpen: s.isRegistrationOpen(),
+	}, nil
 }
 
 // SendVerificationCode 生成 6 位验证码，存入 Redis 并发送邮件。
 // 同一邮箱 60 秒内只允许发一次。
 func (s *AuthService) SendVerificationCode(email string) error {
+	if !s.isRegistrationOpen() {
+		return errors.New("当前未开放注册")
+	}
+
 	ctx := context.Background()
 
 	// 冷却检查
@@ -95,6 +120,10 @@ func (s *AuthService) verifyCode(email, code string) error {
 }
 
 func (s *AuthService) Register(req dto.RegisterRequest) (*dto.AuthResponse, error) {
+	if !s.isRegistrationOpen() {
+		return nil, errors.New("当前未开放注册")
+	}
+
 	if err := s.verifyCode(req.Email, req.Code); err != nil {
 		return nil, err
 	}
