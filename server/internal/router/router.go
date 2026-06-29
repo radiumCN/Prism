@@ -4,6 +4,8 @@ import (
 	"modelhub/server/internal/config"
 	"modelhub/server/internal/handler"
 	"modelhub/server/internal/middleware"
+	"modelhub/server/internal/version"
+	"net/http"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -38,6 +40,15 @@ func Setup(
 	r.Static("/uploads", "./uploads")
 
 	api := r.Group("/api")
+
+	// Version info — public, no auth
+	api.GET("/version", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"version":    version.Version,
+			"git_commit": version.GitCommit,
+			"build_time": version.BuildTime,
+		})
+	})
 
 	// Public auth routes
 	auth := api.Group("/auth")

@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Typography, Tag, Divider, Space } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Typography, Tag, Divider, Space, Skeleton } from 'antd';
 import {
   RocketOutlined,
   ApiOutlined,
@@ -16,6 +16,13 @@ import {
   ToolOutlined,
 } from '@ant-design/icons';
 import AppLayout from '@/components/Layout/AppLayout';
+import { api } from '@/lib/api';
+
+interface VersionInfo {
+  version: string;
+  git_commit: string;
+  build_time: string;
+}
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -68,6 +75,18 @@ const TECH_STACK = [
 ];
 
 export default function AboutPage() {
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+
+  useEffect(() => {
+    api.get<VersionInfo>('/version').then(setVersionInfo).catch(() => {
+      setVersionInfo({ version: 'unknown', git_commit: 'unknown', build_time: 'unknown' });
+    });
+  }, []);
+
+  const webVersion = process.env.NEXT_PUBLIC_WEB_VERSION ?? '0.1.0';
+  const buildTime = process.env.NEXT_PUBLIC_BUILD_TIME;
+  const buildDate = buildTime ? new Date(buildTime).toLocaleDateString('zh-CN') : '-';
+
   return (
     <AppLayout>
       <div style={{ padding: '40px 32px', overflow: 'auto', height: '100%' }}>
@@ -89,9 +108,30 @@ export default function AboutPage() {
           <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15 }}>
             统一 AI 能力的私有化部署平台
           </Text>
-          <div style={{ marginTop: 16 }}>
-            <Tag color="purple">v1.0.0</Tag>
-            <Tag color="green">稳定版</Tag>
+          <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {versionInfo ? (
+              <>
+                <Tag color="purple">
+                  服务端 {versionInfo.version === 'dev' ? 'dev (未编译)' : `v${versionInfo.version}`}
+                </Tag>
+                <Tag color="blue">前端 v{webVersion}</Tag>
+                {versionInfo.git_commit !== 'unknown' && (
+                  <Tag color="default" style={{ fontFamily: 'monospace' }}>
+                    {versionInfo.git_commit.slice(0, 7)}
+                  </Tag>
+                )}
+                {versionInfo.build_time !== 'unknown' && (
+                  <Tag color="default">
+                    构建于 {new Date(versionInfo.build_time).toLocaleDateString('zh-CN')}
+                  </Tag>
+                )}
+                {versionInfo.build_time === 'unknown' && (
+                  <Tag color="default">前端构建于 {buildDate}</Tag>
+                )}
+              </>
+            ) : (
+              <Skeleton.Button active size="small" style={{ width: 200 }} />
+            )}
           </div>
         </div>
 
