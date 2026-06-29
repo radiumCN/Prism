@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -83,7 +84,11 @@ func getEnvInt(key string, fallback int) int {
 }
 
 func Load() (*Config, error) {
-	// Load .env file if present; silently ignore if missing (env vars already set)
+	// Try .env next to the executable first, then fall back to current directory.
+	// This ensures the correct .env is loaded regardless of working directory.
+	if exe, err := os.Executable(); err == nil {
+		_ = godotenv.Load(filepath.Join(filepath.Dir(exe), ".env"))
+	}
 	_ = godotenv.Load()
 
 	return &Config{
