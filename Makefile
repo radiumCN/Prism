@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────
-#  ModelHub — Build & Release Makefile
+#  Prism — Build & Release Makefile
 # ──────────────────────────────────────────────────────
 
 # Read version from VERSION file (trim whitespace)
@@ -12,7 +12,7 @@ LDFLAGS := -X modelhub/server/internal/version.Version=$(VERSION) \
            -X modelhub/server/internal/version.GitCommit=$(GIT_COMMIT) \
            -X modelhub/server/internal/version.BuildTime=$(BUILD_TIME)
 
-SERVER_OUT := dist/modelhub-server
+SERVER_OUT := dist/prism-server
 WEB_OUT    := web/.next
 
 .PHONY: all build build-server build-web run dev clean release tag help
@@ -74,7 +74,7 @@ clean:
 # Show help
 help:
 	@echo ""
-	@echo "  ModelHub Build Commands"
+  @echo "  Prism Build Commands"
 	@echo "  ───────────────────────────────────"
 	@echo "  make build          Build server + web"
 	@echo "  make build-server   Build Go binary only"

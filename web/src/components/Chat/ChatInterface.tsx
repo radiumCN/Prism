@@ -405,7 +405,7 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
                   ⚡
                 </div>
               }
-              title="ModelHub AI 助手"
+              title="Prism AI 助手"
               description="我可以帮助你完成对话、创作、编程等各种任务，选择一个模型开始聊天吧！"
             />
             <div style={{ marginTop: 24 }}>

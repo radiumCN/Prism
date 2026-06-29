@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Tag, Divider, Space, Skeleton } from 'antd';
 import {
-  RocketOutlined,
   ApiOutlined,
   ThunderboltOutlined,
   SafetyOutlined,
@@ -94,16 +93,16 @@ export default function AboutPage() {
         {/* Hero */}
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <div style={{
-            width: 72, height: 72, borderRadius: 20,
-            background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+            width: 88, height: 88, borderRadius: 24,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 20px',
-            boxShadow: '0 0 32px rgba(124,58,237,0.4)',
+            boxShadow: '0 0 40px rgba(124,58,237,0.5)',
+            overflow: 'hidden',
           }}>
-            <RocketOutlined style={{ fontSize: 36, color: '#fff' }} />
+            <img src="/icon.png" alt="Prism" style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 24 }} />
           </div>
           <Title level={2} style={{ color: 'rgba(255,255,255,0.95)', margin: 0 }}>
-            ModelHub
+            Prism
           </Title>
           <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15 }}>
             统一 AI 能力的私有化部署平台
@@ -145,7 +144,7 @@ export default function AboutPage() {
           margin: '0 auto 40px',
         }}>
           <Paragraph style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 1.8, margin: 0 }}>
-            ModelHub 是一个面向团队和个人的私有化 AI 接入平台。通过统一的供应商管理与模型配置，
+            Prism 是一个面向团队和个人的私有化 AI 接入平台。通过统一的供应商管理与模型配置，
             将 OpenAI、Anthropic、Google 等多家大模型服务整合为一个一致的接口，
             支持多账户隔离、对话、图像生成、视频生成、Skill 提示词模板以及
             基于 MCP 协议的外部工具调用。
@@ -270,7 +269,7 @@ export default function AboutPage() {
         {/* Footer */}
         <div style={{ textAlign: 'center', maxWidth: 920, margin: '0 auto' }}>
           <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
-            ModelHub &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; Built with ❤️ using Go & Next.js
+            Prism &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; Built with ❤️ using Go & Next.js
           </Text>
         </div>
 

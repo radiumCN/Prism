@@ -86,11 +86,9 @@ export default function LoginPage() {
         {/* Logo */}
         <div className={styles.logoWrap}>
           <div className={styles.logoIcon}>
-            <svg className={styles.logoSvg} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
+            <img src="/icon.png" alt="Prism" className={styles.logoImg} />
           </div>
-          <h1 className={styles.logoTitle}>ModelHub</h1>
+          <h1 className={styles.logoTitle}>Prism</h1>
           <p className={styles.logoSub}>AI 模型聚合平台</p>
         </div>
 

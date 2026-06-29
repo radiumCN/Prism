@@ -129,9 +129,12 @@ export default function ConversationSidebar({
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <Text strong style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15 }}>
-          ⚡ ModelHub
-        </Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img src="/icon.png" alt="Prism" style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }} />
+          <Text strong style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15 }}>
+            Prism
+          </Text>
+        </div>
         <Button
           type="text"
           icon={<PlusOutlined />}

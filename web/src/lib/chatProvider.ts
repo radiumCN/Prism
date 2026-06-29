@@ -27,7 +27,7 @@ function getAccessToken(): string {
   return localStorage.getItem('access_token') || '';
 }
 
-export class ModelHubChatProvider extends AbstractChatProvider<ChatMessage, ChatInput, ChatOutput> {
+export class PrismChatProvider extends AbstractChatProvider<ChatMessage, ChatInput, ChatOutput> {
   transformParams(
     requestParams: Partial<ChatInput>,
     options: XRequestOptions<ChatInput, ChatOutput, ChatMessage>,
@@ -83,7 +83,7 @@ export function createChatProvider(conversationId: number, modelId?: number) {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
   const url = `${baseUrl}/conversations/${conversationId}/messages`;
 
-  return new ModelHubChatProvider({
+  return new PrismChatProvider({
     request: XRequest<ChatInput, ChatOutput>(url, {
       manual: true,
       middlewares: {

@@ -137,7 +137,7 @@ export default function AdminPage() {
                     <Typography.Text strong style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>基础设置</Typography.Text>
                     <Divider style={{ margin: '8px 0 16px', borderColor: 'rgba(255,255,255,0.08)' }} />
                     <Form.Item name="site_name" label="站点名称">
-                      <Input placeholder="ModelHub" />
+                      <Input placeholder="Prism" />
                     </Form.Item>
                     <Form.Item name="registration_open" label="开放注册" valuePropName="checked"
                       getValueFromEvent={(checked: boolean) => String(checked)}

@@ -18,7 +18,7 @@ func Run(db *gorm.DB) error {
 
 	// Default settings
 	defaults := []model.Setting{
-		{Key: "site_name", Value: "ModelHub"},
+		{Key: "site_name", Value: "Prism"},
 		{Key: "registration_open", Value: "false"},
 		{Key: "initialized", Value: "true"},
 	}
@@ -40,7 +40,7 @@ func Run(db *gorm.DB) error {
 
 		admin := &model.User{
 			Username:     "admin",
-			Email:        "admin@modelhub.local",
+			Email:        "admin@prism.local",
 			PasswordHash: string(hash),
 			Role:         "admin",
 			Status:       "active",
@@ -50,7 +50,7 @@ func Run(db *gorm.DB) error {
 		}
 
 		log.Printf("=== Admin account created ===")
-		log.Printf("Email: admin@modelhub.local")
+		log.Printf("Email: admin@prism.local")
 		log.Printf("Password: %s", password)
 		log.Printf("============================")
 	}
