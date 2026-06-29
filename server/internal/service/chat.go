@@ -59,7 +59,7 @@ func NewChatService(
 func (s *ChatService) CreateConversation(userID uint, req dto.CreateConversationRequest) (*model.Conversation, error) {
 	providerID := req.ProviderID
 	if providerID == 0 {
-		p, err := s.providerModelRepo.FindFirstActiveProviderForModel(req.ModelID)
+		p, err := s.providerModelRepo.FindFirstActiveProviderForModel(req.ModelID, userID)
 		if err != nil {
 			return nil, errors.New("no active provider found for this model")
 		}
@@ -94,11 +94,15 @@ func (s *ChatService) CreateConversation(userID uint, req dto.CreateConversation
 	return conv, nil
 }
 
-// ListSkills returns active skills for the chat UI.
-func (s *ChatService) ListSkills() ([]model.Skill, error) { return s.skillRepo.FindActive() }
+// ListSkills returns active skills belonging to the given user.
+func (s *ChatService) ListSkills(userID uint) ([]model.Skill, error) {
+	return s.skillRepo.FindActive(userID)
+}
 
-// ListMCPServers returns active MCP server configs for the chat UI.
-func (s *ChatService) ListMCPServers() ([]model.MCPServer, error) { return s.mcpRepo.FindActive() }
+// ListMCPServers returns active MCP server configs belonging to the given user.
+func (s *ChatService) ListMCPServers(userID uint) ([]model.MCPServer, error) {
+	return s.mcpRepo.FindActive(userID)
+}
 
 func (s *ChatService) ListConversations(userID uint) ([]model.Conversation, error) {
 	return s.convRepo.FindByUser(userID)
@@ -146,13 +150,13 @@ func (s *ChatService) GetMessages(userID, convID uint) ([]model.Message, error) 
 	return s.msgRepo.FindByConversation(convID)
 }
 
-// resolveProvider returns the Provider to use for a given (modelID, providerID) pair.
-// If providerID is 0, it finds the first active provider for the model.
-func (s *ChatService) resolveProvider(modelID, providerID uint) (*model.Provider, error) {
+// resolveProvider returns the Provider to use for a given (modelID, providerID, userID) tuple.
+// If providerID is 0, it finds the first active provider for the model belonging to the user.
+func (s *ChatService) resolveProvider(modelID, providerID, userID uint) (*model.Provider, error) {
 	if providerID > 0 {
-		return s.providerRepo.FindByID(providerID)
+		return s.providerRepo.FindByID(providerID, userID)
 	}
-	return s.providerModelRepo.FindFirstActiveProviderForModel(modelID)
+	return s.providerModelRepo.FindFirstActiveProviderForModel(modelID, userID)
 }
 
 // getAdapter creates a ChatAdapter using the model's declared api_format and the
@@ -306,7 +310,7 @@ func (s *ChatService) sendEmailBuiltin(to, subject, body string) (string, error)
 // For servers named "Email (SMTP/IMAP)" (or any name containing "email"/"mail"), it injects
 // a built-in send_email tool that uses system SMTP settings instead of requiring an external server.
 // Returns empty if the global mcp_enabled setting is "false".
-func (s *ChatService) loadMCPTools(ctx context.Context, mcpServerIDs string) ([]adapter.Tool, []*adapter.MCPClient) {
+func (s *ChatService) loadMCPTools(ctx context.Context, mcpServerIDs string, userID uint) ([]adapter.Tool, []*adapter.MCPClient) {
 	// Respect the global MCP on/off switch from system settings
 	if enabled, err := s.settingRepo.Get("mcp_enabled"); err == nil && enabled == "false" {
 		log.Printf("[MCP] globally disabled, skipping tool load")
@@ -319,7 +323,7 @@ func (s *ChatService) loadMCPTools(ctx context.Context, mcpServerIDs string) ([]
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	servers, err := s.mcpRepo.FindByIDs(ids)
+	servers, err := s.mcpRepo.FindByIDs(ids, userID)
 	if err != nil {
 		log.Printf("[MCP] FindByIDs(%v) error: %v", ids, err)
 		return nil, nil
@@ -412,7 +416,7 @@ func (s *ChatService) executeMCPToolCalls(ctx context.Context, toolCalls []adapt
 // getSystemPrompts concatenates the system prompts from all skills attached to a conversation.
 // Multiple prompts are separated by a blank line.
 // Returns empty if the global skill_enabled setting is "false".
-func (s *ChatService) getSystemPrompts(conv *model.Conversation) string {
+func (s *ChatService) getSystemPrompts(conv *model.Conversation, userID uint) string {
 	if enabled, err := s.settingRepo.Get("skill_enabled"); err == nil && enabled == "false" {
 		log.Printf("[SKILL] globally disabled, skipping system prompt injection")
 		return ""
@@ -426,7 +430,7 @@ func (s *ChatService) getSystemPrompts(conv *model.Conversation) string {
 		log.Printf("[SKILL] unmarshal error or empty ids: %v", conv.SkillIDs)
 		return ""
 	}
-	skills, err := s.skillRepo.FindByIDs(ids)
+	skills, err := s.skillRepo.FindByIDs(ids, userID)
 	if err != nil || len(skills) == 0 {
 		log.Printf("[SKILL] FindByIDs(%v) returned no skills: err=%v", ids, err)
 		return ""
@@ -442,9 +446,9 @@ func (s *ChatService) getSystemPrompts(conv *model.Conversation) string {
 	return result
 }
 
-// ListAvailableModels returns all (provider, model) pairs that are active and usable for chat.
-func (s *ChatService) ListAvailableModels(modelType string) ([]dto.ModelInfo, error) {
-	providers, err := s.providerRepo.FindAll()
+// ListAvailableModels returns all (provider, model) pairs for the user that are active and usable for chat.
+func (s *ChatService) ListAvailableModels(userID uint, modelType string) ([]dto.ModelInfo, error) {
+	providers, err := s.providerRepo.FindAll(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -504,7 +508,7 @@ func (s *ChatService) SendMessageStream(ctx context.Context, userID, convID uint
 		return nil, errors.New("model is not available")
 	}
 
-	provider, err := s.resolveProvider(modelID, conv.ProviderID)
+	provider, err := s.resolveProvider(modelID, conv.ProviderID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("no provider available for this model: %w", err)
 	}
@@ -532,8 +536,8 @@ func (s *ChatService) SendMessageStream(ctx context.Context, userID, convID uint
 		return nil, err
 	}
 
-	systemPrompt := s.getSystemPrompts(conv)
-	tools, mcpClients := s.loadMCPTools(ctx, conv.MCPServerIDs)
+	systemPrompt := s.getSystemPrompts(conv, userID)
+	tools, mcpClients := s.loadMCPTools(ctx, conv.MCPServerIDs, userID)
 	baseOpts := adapter.ChatOptions{MaxTokens: aiModel.MaxTokens, Tools: tools}
 
 	adapterMsgs := s.buildAdapterMessages(history, req.Content, req.ImageURLs, systemPrompt)
@@ -637,7 +641,7 @@ func (s *ChatService) SendMessage(ctx context.Context, userID, convID uint, req 
 		return nil, errors.New("model not found")
 	}
 
-	provider, err := s.resolveProvider(modelID, conv.ProviderID)
+	provider, err := s.resolveProvider(modelID, conv.ProviderID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("no provider available for this model: %w", err)
 	}
@@ -661,8 +665,8 @@ func (s *ChatService) SendMessage(ctx context.Context, userID, convID uint, req 
 		return nil, err
 	}
 
-	systemPrompt := s.getSystemPrompts(conv)
-	tools, mcpClients := s.loadMCPTools(ctx, conv.MCPServerIDs)
+	systemPrompt := s.getSystemPrompts(conv, userID)
+	tools, mcpClients := s.loadMCPTools(ctx, conv.MCPServerIDs, userID)
 	adapterMsgs := s.buildAdapterMessages(history, req.Content, req.ImageURLs, systemPrompt)
 
 	const maxRounds = 5

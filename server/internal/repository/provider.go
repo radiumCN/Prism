@@ -18,23 +18,23 @@ func (r *ProviderRepository) Create(p *model.Provider) error {
 	return r.db.Create(p).Error
 }
 
-func (r *ProviderRepository) FindAll() ([]model.Provider, error) {
+func (r *ProviderRepository) FindAll(userID uint) ([]model.Provider, error) {
 	var providers []model.Provider
-	err := r.db.Find(&providers).Error
+	err := r.db.Where("user_id = ?", userID).Find(&providers).Error
 	return providers, err
 }
 
-func (r *ProviderRepository) FindByID(id uint) (*model.Provider, error) {
+func (r *ProviderRepository) FindByID(id, userID uint) (*model.Provider, error) {
 	var p model.Provider
-	if err := r.db.First(&p, id).Error; err != nil {
+	if err := r.db.Where("id = ? AND user_id = ?", id, userID).First(&p).Error; err != nil {
 		return nil, err
 	}
 	return &p, nil
 }
 
-func (r *ProviderRepository) FindByName(name string) (*model.Provider, error) {
+func (r *ProviderRepository) FindByName(name string, userID uint) (*model.Provider, error) {
 	var p model.Provider
-	if err := r.db.Where("name = ?", name).First(&p).Error; err != nil {
+	if err := r.db.Where("name = ? AND user_id = ?", name, userID).First(&p).Error; err != nil {
 		return nil, err
 	}
 	return &p, nil
@@ -44,8 +44,8 @@ func (r *ProviderRepository) Update(p *model.Provider) error {
 	return r.db.Save(p).Error
 }
 
-func (r *ProviderRepository) Delete(id uint) error {
-	return r.db.Delete(&model.Provider{}, id).Error
+func (r *ProviderRepository) Delete(id, userID uint) error {
+	return r.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Provider{}).Error
 }
 
 // ModelRepository manages AIModel definitions (no provider coupling).
@@ -61,9 +61,9 @@ func (r *ModelRepository) Create(m *model.AIModel) error {
 	return r.db.Create(m).Error
 }
 
-func (r *ModelRepository) FindAll(modelType string) ([]model.AIModel, error) {
+func (r *ModelRepository) FindAll(userID uint, modelType string) ([]model.AIModel, error) {
 	var models []model.AIModel
-	q := r.db
+	q := r.db.Where("user_id = ?", userID)
 	if modelType != "" {
 		q = q.Where("type = ?", modelType)
 	}
@@ -71,9 +71,9 @@ func (r *ModelRepository) FindAll(modelType string) ([]model.AIModel, error) {
 	return models, err
 }
 
-func (r *ModelRepository) FindActive(modelType string) ([]model.AIModel, error) {
+func (r *ModelRepository) FindActive(userID uint, modelType string) ([]model.AIModel, error) {
 	var models []model.AIModel
-	q := r.db.Where("status = ?", "active")
+	q := r.db.Where("user_id = ? AND status = ?", userID, "active")
 	if modelType != "" {
 		q = q.Where("type = ?", modelType)
 	}
@@ -89,12 +89,20 @@ func (r *ModelRepository) FindByID(id uint) (*model.AIModel, error) {
 	return &m, nil
 }
 
+func (r *ModelRepository) FindByIDAndUser(id, userID uint) (*model.AIModel, error) {
+	var m model.AIModel
+	if err := r.db.Where("id = ? AND user_id = ?", id, userID).First(&m).Error; err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
 func (r *ModelRepository) Update(m *model.AIModel) error {
 	return r.db.Save(m).Error
 }
 
-func (r *ModelRepository) Delete(id uint) error {
-	return r.db.Delete(&model.AIModel{}, id).Error
+func (r *ModelRepository) Delete(id, userID uint) error {
+	return r.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.AIModel{}).Error
 }
 
 // ProviderModelRepository manages the many-to-many between Provider and AIModel.
@@ -146,12 +154,12 @@ func (r *ProviderModelRepository) SetProviderModels(providerID uint, modelIDs []
 	})
 }
 
-// FindFirstActiveProviderForModel finds the first active provider for a given model.
-// Used as fallback when a conversation doesn't have a provider_id set.
-func (r *ProviderModelRepository) FindFirstActiveProviderForModel(modelID uint) (*model.Provider, error) {
+// FindFirstActiveProviderForModel finds the first active provider for a given model belonging to a user.
+func (r *ProviderModelRepository) FindFirstActiveProviderForModel(modelID, userID uint) (*model.Provider, error) {
 	var pm model.ProviderModel
 	err := r.db.Preload("Provider").
-		Where("model_id = ? AND status = ?", modelID, "active").
+		Joins("JOIN providers ON providers.id = provider_models.provider_id AND providers.user_id = ?", userID).
+		Where("provider_models.model_id = ? AND provider_models.status = ?", modelID, "active").
 		First(&pm).Error
 	if err != nil {
 		return nil, err

@@ -42,6 +42,45 @@ func AutoMigrate(db *gorm.DB) error {
 	)
 }
 
+// PreMigrate runs DDL that must happen BEFORE AutoMigrate:
+// - adds user_id columns (nullable with default 0) so AutoMigrate can then build composite indexes safely
+// - drops old single-column unique indexes that would conflict with the new composite ones
+func PreMigrate(db *gorm.DB) error {
+	// Add user_id with default 0 on tables that exist but don't have the column yet.
+	type tableCol struct {
+		table string
+		check interface{} // GORM model used for HasColumn
+	}
+	additions := []struct {
+		table string
+		model interface{}
+	}{
+		{"providers", &model.Provider{}},
+		{"ai_models", &model.AIModel{}},
+		{"skills", &model.Skill{}},
+		{"mcp_servers", &model.MCPServer{}},
+	}
+	for _, a := range additions {
+		if db.Migrator().HasTable(a.table) && !db.Migrator().HasColumn(a.model, "user_id") {
+			if err := db.Exec(`ALTER TABLE ` + a.table + ` ADD COLUMN IF NOT EXISTS user_id bigint DEFAULT 0`).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	// Drop old single-column unique indexes before AutoMigrate creates the new composite ones.
+	for _, idx := range []string{
+		"uni_providers_name",
+		"uni_ai_models_model_name",
+		"uni_skills_name",
+		"uni_mcp_servers_name",
+	} {
+		db.Exec(`DROP INDEX IF EXISTS ` + idx)
+	}
+
+	return nil
+}
+
 // RunCustomMigrations applies one-time DDL changes that AutoMigrate cannot handle,
 // such as dropping old NOT NULL constraints from columns that are no longer part of the model.
 func RunCustomMigrations(db *gorm.DB) error {
@@ -61,5 +100,6 @@ func RunCustomMigrations(db *gorm.DB) error {
 			}
 		}
 	}
+
 	return nil
 }

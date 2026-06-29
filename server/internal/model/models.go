@@ -23,7 +23,8 @@ type Setting struct {
 
 type Provider struct {
 	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name      string    `gorm:"uniqueIndex;size:50;not null" json:"name"`
+	UserID    uint      `gorm:"default:0;index;uniqueIndex:idx_provider_user_name" json:"user_id"`
+	Name      string    `gorm:"size:50;not null;uniqueIndex:idx_provider_user_name" json:"name"`
 	APIKey    string    `gorm:"size:500" json:"-"`
 	BaseURL   string    `gorm:"size:500" json:"base_url"`
 	Status    string    `gorm:"size:20;default:'active'" json:"status"`
@@ -43,7 +44,8 @@ const (
 // One model can be associated with multiple providers via ProviderModel.
 type AIModel struct {
 	ID               uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	ModelName        string    `gorm:"uniqueIndex;size:100;not null" json:"model_name"`
+	UserID           uint      `gorm:"default:0;index;uniqueIndex:idx_aimodel_user_name" json:"user_id"`
+	ModelName        string    `gorm:"size:100;not null;uniqueIndex:idx_aimodel_user_name" json:"model_name"`
 	DisplayName      string    `gorm:"size:200" json:"display_name"`
 	Type             string    `gorm:"size:20;default:'chat'" json:"type"`
 	// APIFormat determines which HTTP endpoint format to use for this model.
@@ -73,7 +75,8 @@ type ProviderModel struct {
 // Skill is a reusable system-prompt template that can be attached to a conversation.
 type Skill struct {
 	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name         string    `gorm:"uniqueIndex;size:100;not null" json:"name"`
+	UserID       uint      `gorm:"default:0;index;uniqueIndex:idx_skill_user_name" json:"user_id"`
+	Name         string    `gorm:"size:100;not null;uniqueIndex:idx_skill_user_name" json:"name"`
 	Description  string    `gorm:"size:500" json:"description"`
 	SystemPrompt string    `gorm:"type:text;not null" json:"system_prompt"`
 	Icon         string    `gorm:"size:50" json:"icon"` // emoji
@@ -85,7 +88,8 @@ type Skill struct {
 // MCPServer holds the connection config for an MCP (Model Context Protocol) server.
 type MCPServer struct {
 	ID          uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name        string    `gorm:"uniqueIndex;size:100;not null" json:"name"`
+	UserID      uint      `gorm:"default:0;index;uniqueIndex:idx_mcpserver_user_name" json:"user_id"`
+	Name        string    `gorm:"size:100;not null;uniqueIndex:idx_mcpserver_user_name" json:"name"`
 	Description string    `gorm:"size:500" json:"description"`
 	URL         string    `gorm:"size:500;not null" json:"url"` // HTTP/SSE endpoint
 	AuthHeader  string    `gorm:"size:500" json:"-"`            // Authorization value (encrypted)

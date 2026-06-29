@@ -10,6 +10,7 @@ import {
   LogoutOutlined,
   UserOutlined,
   DashboardOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
@@ -39,6 +40,7 @@ export default function NavRail() {
     ...(isAdmin
       ? [{ key: '/admin', icon: <DashboardOutlined />, label: '管理', onClick: () => router.push('/admin') }]
       : []),
+    { key: '/about', icon: <InfoCircleOutlined />, label: '关于', onClick: () => router.push('/about') },
   ];
 
   const userMenuItems = [

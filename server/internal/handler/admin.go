@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"modelhub/server/internal/dto"
+	"modelhub/server/internal/middleware"
 	"modelhub/server/internal/service"
 	"net/http"
 	"strconv"
@@ -24,7 +25,8 @@ func NewAdminHandler(adminSvc *service.AdminService) *AdminHandler {
 }
 
 func (h *AdminHandler) ListProviders(c *gin.Context) {
-	providers, counts, err := h.adminSvc.ListProvidersWithModelCounts()
+	userID := middleware.GetUserID(c)
+	providers, counts, err := h.adminSvc.ListProvidersWithModelCounts(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -50,12 +52,13 @@ func (h *AdminHandler) ListProviders(c *gin.Context) {
 }
 
 func (h *AdminHandler) CreateProvider(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	var req dto.UpsertProviderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	p, err := h.adminSvc.CreateProvider(req)
+	p, err := h.adminSvc.CreateProvider(userID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -64,13 +67,14 @@ func (h *AdminHandler) CreateProvider(c *gin.Context) {
 }
 
 func (h *AdminHandler) UpdateProvider(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req dto.UpsertProviderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	p, err := h.adminSvc.UpdateProvider(uint(id), req)
+	p, err := h.adminSvc.UpdateProvider(userID, uint(id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -79,8 +83,9 @@ func (h *AdminHandler) UpdateProvider(c *gin.Context) {
 }
 
 func (h *AdminHandler) DeleteProvider(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err := h.adminSvc.DeleteProvider(uint(id)); err != nil {
+	if err := h.adminSvc.DeleteProvider(userID, uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -88,8 +93,9 @@ func (h *AdminHandler) DeleteProvider(c *gin.Context) {
 }
 
 func (h *AdminHandler) ListModels(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	modelType := c.Query("type")
-	models, err := h.adminSvc.ListModels(modelType)
+	models, err := h.adminSvc.ListModels(userID, modelType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -98,12 +104,13 @@ func (h *AdminHandler) ListModels(c *gin.Context) {
 }
 
 func (h *AdminHandler) CreateModel(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	var req dto.UpsertModelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	m, err := h.adminSvc.CreateModel(req)
+	m, err := h.adminSvc.CreateModel(userID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -112,13 +119,14 @@ func (h *AdminHandler) CreateModel(c *gin.Context) {
 }
 
 func (h *AdminHandler) UpdateModel(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req dto.UpsertModelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	m, err := h.adminSvc.UpdateModel(uint(id), req)
+	m, err := h.adminSvc.UpdateModel(userID, uint(id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -127,18 +135,20 @@ func (h *AdminHandler) UpdateModel(c *gin.Context) {
 }
 
 func (h *AdminHandler) DeleteModel(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err := h.adminSvc.DeleteModel(uint(id)); err != nil {
+	if err := h.adminSvc.DeleteModel(userID, uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusNoContent, nil)
 }
 
-// GetProviderModels returns the model list associated with a provider.
+// GetProviderModels returns the model list associated with a provider (owned by the caller).
 func (h *AdminHandler) GetProviderModels(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	providerID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	pms, err := h.adminSvc.GetProviderModels(uint(providerID))
+	pms, err := h.adminSvc.GetProviderModels(userID, uint(providerID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -146,21 +156,23 @@ func (h *AdminHandler) GetProviderModels(c *gin.Context) {
 	c.JSON(http.StatusOK, pms)
 }
 
-// SetProviderModels replaces the model list for a provider (full replace).
+// SetProviderModels replaces the model list for a provider (owned by the caller).
 func (h *AdminHandler) SetProviderModels(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	providerID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req dto.SetProviderModelsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.adminSvc.SetProviderModels(uint(providerID), req); err != nil {
+	if err := h.adminSvc.SetProviderModels(userID, uint(providerID), req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "provider models updated"})
 }
 
+// GetSettings and UpdateSettings remain admin-only (called only from admin routes).
 func (h *AdminHandler) GetSettings(c *gin.Context) {
 	settings, err := h.adminSvc.GetSettings()
 	if err != nil {
@@ -186,7 +198,8 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 // --- Skills ---
 
 func (h *AdminHandler) ListSkills(c *gin.Context) {
-	skills, err := h.adminSvc.ListSkills()
+	userID := middleware.GetUserID(c)
+	skills, err := h.adminSvc.ListSkills(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -195,12 +208,13 @@ func (h *AdminHandler) ListSkills(c *gin.Context) {
 }
 
 func (h *AdminHandler) CreateSkill(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	var req dto.UpsertSkillRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	sk, err := h.adminSvc.CreateSkill(req)
+	sk, err := h.adminSvc.CreateSkill(userID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -209,13 +223,14 @@ func (h *AdminHandler) CreateSkill(c *gin.Context) {
 }
 
 func (h *AdminHandler) UpdateSkill(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req dto.UpsertSkillRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	sk, err := h.adminSvc.UpdateSkill(uint(id), req)
+	sk, err := h.adminSvc.UpdateSkill(userID, uint(id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -224,8 +239,9 @@ func (h *AdminHandler) UpdateSkill(c *gin.Context) {
 }
 
 func (h *AdminHandler) DeleteSkill(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err := h.adminSvc.DeleteSkill(uint(id)); err != nil {
+	if err := h.adminSvc.DeleteSkill(userID, uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -240,28 +256,19 @@ type skillFrontmatter struct {
 }
 
 // parseSkillMD parses a SKILL.md-style Markdown file.
-// Format:
-//
-//	---
-//	name: my-skill
-//	description: What this skill does.
-//	---
-//	# Body content (becomes the system_prompt)
 func parseSkillMD(data []byte) (dto.UpsertSkillRequest, bool) {
 	content := strings.TrimSpace(string(data))
 	if !strings.HasPrefix(content, "---") {
-		// No frontmatter — treat entire file as system_prompt, use filename as name later
 		return dto.UpsertSkillRequest{SystemPrompt: content}, true
 	}
 
-	// Find closing ---
 	rest := content[3:]
 	idx := strings.Index(rest, "\n---")
 	if idx < 0 {
 		return dto.UpsertSkillRequest{}, false
 	}
 	fmRaw := strings.TrimSpace(rest[:idx])
-	body := strings.TrimSpace(rest[idx+4:]) // skip \n---
+	body := strings.TrimSpace(rest[idx+4:])
 
 	var fm skillFrontmatter
 	if err := yaml.Unmarshal([]byte(fmRaw), &fm); err != nil {
@@ -277,7 +284,6 @@ func parseSkillMD(data []byte) (dto.UpsertSkillRequest, bool) {
 }
 
 // parseFileToSkills converts raw file bytes into a slice of UpsertSkillRequest.
-// Supports .md (SKILL.md format), .json (array or single object).
 func parseFileToSkills(filename string, data []byte) []dto.UpsertSkillRequest {
 	lname := strings.ToLower(filename)
 	switch {
@@ -286,7 +292,6 @@ func parseFileToSkills(filename string, data []byte) []dto.UpsertSkillRequest {
 		if !ok || (req.Name == "" && req.SystemPrompt == "") {
 			return nil
 		}
-		// If name missing, derive from filename
 		if req.Name == "" {
 			req.Name = strings.TrimSuffix(strings.TrimSuffix(filename, ".md"), ".SKILL")
 			req.Name = strings.ReplaceAll(req.Name, "-", " ")
@@ -306,11 +311,9 @@ func parseFileToSkills(filename string, data []byte) []dto.UpsertSkillRequest {
 	return nil
 }
 
-// ImportSkills accepts a multipart upload (.md, .json, .zip) and bulk-creates skills.
-//   - .md  — SKILL.md format with YAML frontmatter (name, description) + Markdown body as system_prompt
-//   - .json — array or single object with name/description/system_prompt/icon/status fields
-//   - .zip  — archive containing any combination of .md and .json files
+// ImportSkills accepts a multipart upload (.md, .json, .zip) and bulk-creates skills for the caller.
 func (h *AdminHandler) ImportSkills(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请上传文件（字段名 file）"})
@@ -344,7 +347,7 @@ func (h *AdminHandler) ImportSkills(c *gin.Context) {
 			}
 			data, _ := io.ReadAll(rc)
 			rc.Close()
-			baseName := f.Name[strings.LastIndex(f.Name, "/")+1:] // basename only
+			baseName := f.Name[strings.LastIndex(f.Name, "/")+1:]
 			reqs = append(reqs, parseFileToSkills(baseName, data)...)
 		}
 	} else {
@@ -360,7 +363,7 @@ func (h *AdminHandler) ImportSkills(c *gin.Context) {
 		return
 	}
 
-	created, failed := h.adminSvc.BulkCreateSkills(reqs)
+	created, failed := h.adminSvc.BulkCreateSkills(userID, reqs)
 	c.JSON(http.StatusOK, gin.H{
 		"created": created,
 		"failed":  failed,
@@ -371,7 +374,8 @@ func (h *AdminHandler) ImportSkills(c *gin.Context) {
 // --- MCP Servers ---
 
 func (h *AdminHandler) ListMCPServers(c *gin.Context) {
-	servers, err := h.adminSvc.ListMCPServers()
+	userID := middleware.GetUserID(c)
+	servers, err := h.adminSvc.ListMCPServers(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -380,12 +384,13 @@ func (h *AdminHandler) ListMCPServers(c *gin.Context) {
 }
 
 func (h *AdminHandler) CreateMCPServer(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	var req dto.UpsertMCPServerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	sv, err := h.adminSvc.CreateMCPServer(req)
+	sv, err := h.adminSvc.CreateMCPServer(userID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -394,13 +399,14 @@ func (h *AdminHandler) CreateMCPServer(c *gin.Context) {
 }
 
 func (h *AdminHandler) UpdateMCPServer(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req dto.UpsertMCPServerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	sv, err := h.adminSvc.UpdateMCPServer(uint(id), req)
+	sv, err := h.adminSvc.UpdateMCPServer(userID, uint(id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -409,8 +415,9 @@ func (h *AdminHandler) UpdateMCPServer(c *gin.Context) {
 }
 
 func (h *AdminHandler) DeleteMCPServer(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err := h.adminSvc.DeleteMCPServer(uint(id)); err != nil {
+	if err := h.adminSvc.DeleteMCPServer(userID, uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

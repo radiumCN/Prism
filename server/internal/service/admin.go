@@ -38,14 +38,9 @@ func NewAdminService(
 	}
 }
 
-func (s *AdminService) ListProviders() ([]model.Provider, error) {
-	return s.providerRepo.FindAll()
-}
-
-// ListProvidersWithModelCounts returns all providers together with a map of
-// providerID → number of associated active models.
-func (s *AdminService) ListProvidersWithModelCounts() ([]model.Provider, map[uint]int, error) {
-	providers, err := s.providerRepo.FindAll()
+// ListProvidersWithModelCounts returns the calling user's providers with associated model counts.
+func (s *AdminService) ListProvidersWithModelCounts(userID uint) ([]model.Provider, map[uint]int, error) {
+	providers, err := s.providerRepo.FindAll(userID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -59,8 +54,9 @@ func (s *AdminService) ListProvidersWithModelCounts() ([]model.Provider, map[uin
 	return providers, counts, nil
 }
 
-func (s *AdminService) CreateProvider(req dto.UpsertProviderRequest) (*model.Provider, error) {
+func (s *AdminService) CreateProvider(userID uint, req dto.UpsertProviderRequest) (*model.Provider, error) {
 	p := &model.Provider{
+		UserID:  userID,
 		Name:    req.Name,
 		BaseURL: req.BaseURL,
 		Status:  req.Status,
@@ -83,8 +79,8 @@ func (s *AdminService) CreateProvider(req dto.UpsertProviderRequest) (*model.Pro
 	return p, nil
 }
 
-func (s *AdminService) UpdateProvider(id uint, req dto.UpsertProviderRequest) (*model.Provider, error) {
-	p, err := s.providerRepo.FindByID(id)
+func (s *AdminService) UpdateProvider(userID, id uint, req dto.UpsertProviderRequest) (*model.Provider, error) {
+	p, err := s.providerRepo.FindByID(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,18 +105,19 @@ func (s *AdminService) UpdateProvider(id uint, req dto.UpsertProviderRequest) (*
 	return p, nil
 }
 
-func (s *AdminService) DeleteProvider(id uint) error {
-	return s.providerRepo.Delete(id)
+func (s *AdminService) DeleteProvider(userID, id uint) error {
+	return s.providerRepo.Delete(id, userID)
 }
 
-// --- Model management (no provider coupling) ---
+// --- Model management ---
 
-func (s *AdminService) ListModels(modelType string) ([]model.AIModel, error) {
-	return s.modelRepo.FindAll(modelType)
+func (s *AdminService) ListModels(userID uint, modelType string) ([]model.AIModel, error) {
+	return s.modelRepo.FindAll(userID, modelType)
 }
 
-func (s *AdminService) CreateModel(req dto.UpsertModelRequest) (*model.AIModel, error) {
+func (s *AdminService) CreateModel(userID uint, req dto.UpsertModelRequest) (*model.AIModel, error) {
 	m := &model.AIModel{
+		UserID:           userID,
 		ModelName:        req.ModelName,
 		DisplayName:      req.DisplayName,
 		Type:             req.Type,
@@ -147,8 +144,8 @@ func (s *AdminService) CreateModel(req dto.UpsertModelRequest) (*model.AIModel, 
 	return m, nil
 }
 
-func (s *AdminService) UpdateModel(id uint, req dto.UpsertModelRequest) (*model.AIModel, error) {
-	m, err := s.modelRepo.FindByID(id)
+func (s *AdminService) UpdateModel(userID, id uint, req dto.UpsertModelRequest) (*model.AIModel, error) {
+	m, err := s.modelRepo.FindByIDAndUser(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -175,23 +172,27 @@ func (s *AdminService) UpdateModel(id uint, req dto.UpsertModelRequest) (*model.
 	return m, nil
 }
 
-func (s *AdminService) DeleteModel(id uint) error {
-	return s.modelRepo.Delete(id)
+func (s *AdminService) DeleteModel(userID, id uint) error {
+	return s.modelRepo.Delete(id, userID)
 }
 
 // --- Provider-model association ---
 
-// GetProviderModels returns all models currently associated with a provider.
-func (s *AdminService) GetProviderModels(providerID uint) ([]model.ProviderModel, error) {
+func (s *AdminService) GetProviderModels(userID, providerID uint) ([]model.ProviderModel, error) {
+	if _, err := s.providerRepo.FindByID(providerID, userID); err != nil {
+		return nil, err
+	}
 	return s.providerModelRepo.GetByProvider(providerID)
 }
 
-// SetProviderModels replaces the model list for a provider.
-func (s *AdminService) SetProviderModels(providerID uint, req dto.SetProviderModelsRequest) error {
+func (s *AdminService) SetProviderModels(userID, providerID uint, req dto.SetProviderModelsRequest) error {
+	if _, err := s.providerRepo.FindByID(providerID, userID); err != nil {
+		return err
+	}
 	return s.providerModelRepo.SetProviderModels(providerID, req.ModelIDs)
 }
 
-// --- Settings ---
+// --- Settings (system-wide, admin only) ---
 
 func (s *AdminService) GetSettings() (map[string]string, error) {
 	return s.settingRepo.GetAll()
@@ -203,11 +204,17 @@ func (s *AdminService) UpdateSettings(req dto.UpdateSettingsRequest) error {
 
 // --- Skills ---
 
-func (s *AdminService) ListSkills() ([]model.Skill, error)        { return s.skillRepo.FindAll() }
-func (s *AdminService) ListActiveSkills() ([]model.Skill, error)  { return s.skillRepo.FindActive() }
+func (s *AdminService) ListSkills(userID uint) ([]model.Skill, error) {
+	return s.skillRepo.FindAll(userID)
+}
 
-func (s *AdminService) CreateSkill(req dto.UpsertSkillRequest) (*model.Skill, error) {
+func (s *AdminService) ListActiveSkills(userID uint) ([]model.Skill, error) {
+	return s.skillRepo.FindActive(userID)
+}
+
+func (s *AdminService) CreateSkill(userID uint, req dto.UpsertSkillRequest) (*model.Skill, error) {
 	sk := &model.Skill{
+		UserID:       userID,
 		Name:         req.Name,
 		Description:  req.Description,
 		SystemPrompt: req.SystemPrompt,
@@ -220,8 +227,8 @@ func (s *AdminService) CreateSkill(req dto.UpsertSkillRequest) (*model.Skill, er
 	return sk, s.skillRepo.Create(sk)
 }
 
-func (s *AdminService) UpdateSkill(id uint, req dto.UpsertSkillRequest) (*model.Skill, error) {
-	sk, err := s.skillRepo.FindByID(id)
+func (s *AdminService) UpdateSkill(userID, id uint, req dto.UpsertSkillRequest) (*model.Skill, error) {
+	sk, err := s.skillRepo.FindByID(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -235,11 +242,12 @@ func (s *AdminService) UpdateSkill(id uint, req dto.UpsertSkillRequest) (*model.
 	return sk, s.skillRepo.Update(sk)
 }
 
-func (s *AdminService) DeleteSkill(id uint) error { return s.skillRepo.Delete(id) }
+func (s *AdminService) DeleteSkill(userID, id uint) error {
+	return s.skillRepo.Delete(id, userID)
+}
 
-// BulkCreateSkills creates multiple skills, skipping duplicates or invalid entries.
-// Returns the number created and a list of error messages for the failed ones.
-func (s *AdminService) BulkCreateSkills(reqs []dto.UpsertSkillRequest) (int, []string) {
+// BulkCreateSkills creates multiple skills for a user, skipping duplicates or invalid entries.
+func (s *AdminService) BulkCreateSkills(userID uint, reqs []dto.UpsertSkillRequest) (int, []string) {
 	created := 0
 	var errs []string
 	for _, req := range reqs {
@@ -248,6 +256,7 @@ func (s *AdminService) BulkCreateSkills(reqs []dto.UpsertSkillRequest) (int, []s
 			continue
 		}
 		sk := &model.Skill{
+			UserID:       userID,
 			Name:         req.Name,
 			Description:  req.Description,
 			SystemPrompt: req.SystemPrompt,
@@ -268,8 +277,8 @@ func (s *AdminService) BulkCreateSkills(reqs []dto.UpsertSkillRequest) (int, []s
 
 // --- MCP Servers ---
 
-func (s *AdminService) ListMCPServers() ([]dto.MCPServerResponse, error) {
-	servers, err := s.mcpRepo.FindAll()
+func (s *AdminService) ListMCPServers(userID uint) ([]dto.MCPServerResponse, error) {
+	servers, err := s.mcpRepo.FindAll(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -287,8 +296,8 @@ func (s *AdminService) ListMCPServers() ([]dto.MCPServerResponse, error) {
 	return resp, nil
 }
 
-func (s *AdminService) ListActiveMCPServers() ([]dto.MCPServerResponse, error) {
-	servers, err := s.mcpRepo.FindActive()
+func (s *AdminService) ListActiveMCPServers(userID uint) ([]dto.MCPServerResponse, error) {
+	servers, err := s.mcpRepo.FindActive(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -306,8 +315,9 @@ func (s *AdminService) ListActiveMCPServers() ([]dto.MCPServerResponse, error) {
 	return resp, nil
 }
 
-func (s *AdminService) CreateMCPServer(req dto.UpsertMCPServerRequest) (*dto.MCPServerResponse, error) {
+func (s *AdminService) CreateMCPServer(userID uint, req dto.UpsertMCPServerRequest) (*dto.MCPServerResponse, error) {
 	sv := &model.MCPServer{
+		UserID:      userID,
 		Name:        req.Name,
 		Description: req.Description,
 		URL:         req.URL,
@@ -326,8 +336,8 @@ func (s *AdminService) CreateMCPServer(req dto.UpsertMCPServerRequest) (*dto.MCP
 	}, nil
 }
 
-func (s *AdminService) UpdateMCPServer(id uint, req dto.UpsertMCPServerRequest) (*dto.MCPServerResponse, error) {
-	sv, err := s.mcpRepo.FindByID(id)
+func (s *AdminService) UpdateMCPServer(userID, id uint, req dto.UpsertMCPServerRequest) (*dto.MCPServerResponse, error) {
+	sv, err := s.mcpRepo.FindByID(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -349,4 +359,6 @@ func (s *AdminService) UpdateMCPServer(id uint, req dto.UpsertMCPServerRequest) 
 	}, nil
 }
 
-func (s *AdminService) DeleteMCPServer(id uint) error { return s.mcpRepo.Delete(id) }
+func (s *AdminService) DeleteMCPServer(userID, id uint) error {
+	return s.mcpRepo.Delete(id, userID)
+}

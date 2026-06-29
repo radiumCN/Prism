@@ -42,7 +42,7 @@ export default function ModelsTable() {
 
   const load = () => {
     setLoading(true);
-    api.get<AIModel[]>('/admin/models')
+    api.get<AIModel[]>('/models/manage')
       .then(setModels)
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -53,10 +53,10 @@ export default function ModelsTable() {
   const handleSave = async (values: Partial<AIModel>) => {
     try {
       if (editingModel) {
-        await api.put(`/admin/models/${editingModel.id}`, values);
+        await api.put(`/models/${editingModel.id}`, values);
         message.success('模型已更新');
       } else {
-        await api.post('/admin/models', values);
+        await api.post('/models', values);
         message.success('模型已创建');
       }
       setModalOpen(false);
@@ -69,7 +69,7 @@ export default function ModelsTable() {
 
   const handleToggleStatus = async (model: AIModel) => {
     try {
-      await api.put(`/admin/models/${model.id}`, { ...model, status: model.status === 'active' ? 'inactive' : 'active' });
+      await api.put(`/models/${model.id}`, { ...model, status: model.status === 'active' ? 'inactive' : 'active' });
       load();
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : '操作失败');
@@ -78,7 +78,7 @@ export default function ModelsTable() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/admin/models/${id}`);
+      await api.delete(`/models/${id}`);
       message.success('已删除');
       load();
     } catch (err: unknown) {

@@ -526,7 +526,7 @@ export default function MCPTable() {
 
   const load = () => {
     setLoading(true);
-    api.get<MCPServer[]>('/admin/mcp-servers')
+    api.get<MCPServer[]>('/mcp-servers/manage')
       .then((list) => {
         const safe = list ?? [];
         setServers(safe);
@@ -556,10 +556,10 @@ export default function MCPTable() {
     setSaving(true);
     try {
       if (editing) {
-        const updated = await api.put<MCPServer>(`/admin/mcp-servers/${editing.id}`, values);
+        const updated = await api.put<MCPServer>(`/mcp-servers/${editing.id}`, values);
         setServers((prev) => prev.map((s) => (s.id === editing.id ? { ...s, ...updated } : s)));
       } else {
-        const created = await api.post<MCPServer>('/admin/mcp-servers', values);
+        const created = await api.post<MCPServer>('/mcp-servers', values);
         setServers((prev) => [created, ...prev]);
         setInstalledIds((prev) => new Set([...prev, values.name.toLowerCase()]));
       }
@@ -574,7 +574,7 @@ export default function MCPTable() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/admin/mcp-servers/${id}`);
+      await api.delete(`/mcp-servers/${id}`);
       setServers((prev) => prev.filter((s) => s.id !== id));
       antMessage.success('已删除');
     } catch {

@@ -22,6 +22,10 @@ func main() {
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
+	if err := database.PreMigrate(db); err != nil {
+		log.Fatalf("failed to run pre-migrations: %v", err)
+	}
+
 	if err := database.AutoMigrate(db); err != nil {
 		log.Fatalf("failed to run migrations: %v", err)
 	}

@@ -43,8 +43,8 @@ function ProviderModelAssoc({ provider, onCountChange }: {
     setLoading(true);
     try {
       const [all, pms] = await Promise.all([
-        api.get<AIModel[]>('/admin/models'),
-        api.get<ProviderModel[]>(`/admin/providers/${provider.id}/models`),
+        api.get<AIModel[]>('/models/manage'),
+        api.get<ProviderModel[]>(`/providers/${provider.id}/models`),
       ]);
       setAllModels(all);
       const ids = new Set(pms.map((pm) => pm.model_id));
@@ -71,7 +71,7 @@ function ProviderModelAssoc({ provider, onCountChange }: {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put(`/admin/providers/${provider.id}/models`, {
+      await api.put(`/providers/${provider.id}/models`, {
         model_ids: Array.from(checkedIDs),
       });
       message.success('关联模型已保存');
@@ -187,7 +187,7 @@ export default function ProvidersTable() {
 
   const load = () => {
     setLoading(true);
-    api.get<(Provider & { model_count?: number })[]>('/admin/providers')
+    api.get<(Provider & { model_count?: number })[]>('/providers')
       .then((list) => {
         setProviders(list);
         // Seed modelCounts from what the server already returned
@@ -204,11 +204,11 @@ export default function ProvidersTable() {
   const handleSaveInfo = async (values: { name: string; api_key: string; base_url: string; status: string }) => {
     try {
       if (editingProvider) {
-        const updated = await api.put<Provider>(`/admin/providers/${editingProvider.id}`, values);
+        const updated = await api.put<Provider>(`/providers/${editingProvider.id}`, values);
         setEditingProvider(updated);
         message.success('供应商已更新');
       } else {
-        const created = await api.post<Provider>('/admin/providers', values);
+        const created = await api.post<Provider>('/providers', values);
         setEditingProvider(created);
         setActiveTab('models');
         message.success('供应商已创建，现在为其关联支持的模型');
@@ -223,7 +223,7 @@ export default function ProvidersTable() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/admin/providers/${id}`);
+      await api.delete(`/providers/${id}`);
       message.success('已删除');
       load();
     } catch (err: unknown) {

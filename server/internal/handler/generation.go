@@ -58,12 +58,12 @@ func (h *GenerationHandler) GenerateImage(c *gin.Context) {
 		return
 	}
 
-	// Resolve which provider to use
+	// Resolve which provider to use (scoped to the requesting user)
 	var provider *model.Provider
 	if req.ProviderID > 0 {
-		provider, err = h.providerRepo.FindByID(req.ProviderID)
+		provider, err = h.providerRepo.FindByID(req.ProviderID, userID)
 	} else {
-		provider, err = h.providerModelRepo.FindFirstActiveProviderForModel(req.ModelID)
+		provider, err = h.providerModelRepo.FindFirstActiveProviderForModel(req.ModelID, userID)
 	}
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no active provider found for this model"})
@@ -141,9 +141,9 @@ func (h *GenerationHandler) GenerateVideo(c *gin.Context) {
 
 	var provider *model.Provider
 	if req.ProviderID > 0 {
-		provider, err = h.providerRepo.FindByID(req.ProviderID)
+		provider, err = h.providerRepo.FindByID(req.ProviderID, userID)
 	} else {
-		provider, err = h.providerModelRepo.FindFirstActiveProviderForModel(req.ModelID)
+		provider, err = h.providerModelRepo.FindFirstActiveProviderForModel(req.ModelID, userID)
 	}
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no active provider found for this model"})

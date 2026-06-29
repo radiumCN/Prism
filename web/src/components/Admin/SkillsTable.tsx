@@ -31,7 +31,7 @@ export default function SkillsTable() {
 
   const load = () => {
     setLoading(true);
-    api.get<Skill[]>('/admin/skills')
+    api.get<Skill[]>('/skills/manage')
       .then((list) => setSkills(list ?? []))
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -57,10 +57,10 @@ export default function SkillsTable() {
     setSaving(true);
     try {
       if (editing) {
-        const updated = await api.put<Skill>(`/admin/skills/${editing.id}`, values);
+        const updated = await api.put<Skill>(`/skills/${editing.id}`, values);
         setSkills((prev) => prev.map((s) => (s.id === editing.id ? updated : s)));
       } else {
-        const created = await api.post<Skill>('/admin/skills', values);
+        const created = await api.post<Skill>('/skills', values);
         setSkills((prev) => [created, ...prev]);
       }
       setModalOpen(false);
@@ -81,7 +81,7 @@ export default function SkillsTable() {
       const formData = new FormData();
       formData.append('file', importFile.originFileObj as File);
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/skills/import`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/skills/import`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token ?? ''}` },
@@ -101,7 +101,7 @@ export default function SkillsTable() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/admin/skills/${id}`);
+      await api.delete(`/skills/${id}`);
       setSkills((prev) => prev.filter((s) => s.id !== id));
       antMessage.success('已删除');
     } catch {

@@ -39,7 +39,7 @@ export interface ModelInfo {
   supports_vision: boolean;
 }
 
-/** Join table row returned by GET /admin/providers/:id/models */
+/** Join table row returned by GET /providers/:id/models */
 export interface ProviderModel {
   provider_id: number;
   model_id: number;

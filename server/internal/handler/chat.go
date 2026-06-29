@@ -20,9 +20,10 @@ func NewChatHandler(chatSvc *service.ChatService) *ChatHandler {
 	return &ChatHandler{chatSvc: chatSvc}
 }
 
-// ListSkills returns active skills visible to all authenticated users.
+// ListSkills returns active skills belonging to the authenticated user.
 func (h *ChatHandler) ListSkills(c *gin.Context) {
-	skills, err := h.chatSvc.ListSkills()
+	userID := middleware.GetUserID(c)
+	skills, err := h.chatSvc.ListSkills(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -30,9 +31,10 @@ func (h *ChatHandler) ListSkills(c *gin.Context) {
 	c.JSON(http.StatusOK, skills)
 }
 
-// ListMCPServers returns active MCP server configs visible to all authenticated users.
+// ListMCPServers returns active MCP server configs belonging to the authenticated user.
 func (h *ChatHandler) ListMCPServers(c *gin.Context) {
-	servers, err := h.chatSvc.ListMCPServers()
+	userID := middleware.GetUserID(c)
+	servers, err := h.chatSvc.ListMCPServers(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -51,10 +53,11 @@ func (h *ChatHandler) ListMCPServers(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// ListModels returns all (provider, model) combinations available for chat.
+// ListModels returns all (provider, model) combinations available to the authenticated user for chat.
 func (h *ChatHandler) ListModels(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	modelType := c.Query("type")
-	models, err := h.chatSvc.ListAvailableModels(modelType)
+	models, err := h.chatSvc.ListAvailableModels(userID, modelType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
