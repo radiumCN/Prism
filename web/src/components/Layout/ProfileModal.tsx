@@ -119,17 +119,15 @@ export default function ProfileModal({ open, onClose }: Props) {
       title={null}
       width={480}
       destroyOnHidden
+      style={{
+        background: 'rgba(15,12,41,0.98)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 16,
+        padding: 0,
+        maxHeight: '90vh',
+        overflow: 'hidden',
+      }}
       styles={{
-        content: {
-          background: 'rgba(15,12,41,0.98)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 16,
-          padding: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: '90vh',
-          overflow: 'hidden',
-        },
         body: { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' },
         mask: { backdropFilter: 'blur(4px)' },
       }}
