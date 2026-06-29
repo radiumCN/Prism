@@ -95,7 +95,7 @@ func Load() (*Config, error) {
 		Server: ServerConfig{
 			Port:        getEnv("SERVER_PORT", "8080"),
 			Mode:        getEnv("SERVER_MODE", "debug"),
-			CORSOrigins: parseCORSOrigins(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),
+			CORSOrigins: parseCORSOrigins(getEnv("CORS_ORIGINS", "http://localhost:3630,http://localhost:3000")),
 		},
 		Database: DatabaseConfig{
 			DSN: getEnv("DATABASE_DSN", "host=localhost user=postgres password=postgres dbname=modelhub port=5432 sslmode=disable"),
