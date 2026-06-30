@@ -24,6 +24,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import ProfileModal from './ProfileModal';
 import { api, BASE } from '@/lib/api';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const { Sider } = Layout;
 
@@ -52,6 +53,7 @@ export default function NavRail() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [mounted, setMounted] = useState(false);
+  const isMobile = useIsMobile();
   const [profileOpen, setProfileOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('submit');
@@ -215,59 +217,10 @@ export default function NavRail() {
 
   const selectedKey = menuItems.find((m) => pathname.startsWith(m.key))?.key || '/chat';
 
-  return (
+  const modals = (
     <>
-    <Sider
-      width={64}
-      style={{
-        background: 'rgba(15,12,41,0.6)',
-        backdropFilter: 'blur(16px)',
-        borderRight: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        paddingTop: 8,
-        paddingBottom: 8,
-        flexShrink: 0,
-      }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', gap: 4 }}>
-        {menuItems.map((item) => (
-          <div
-            key={item.key}
-            onClick={item.onClick}
-            style={{
-              width: 44, height: 44,
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              borderRadius: 12, cursor: 'pointer',
-              background: selectedKey === item.key ? 'rgba(124,58,237,0.25)' : 'transparent',
-              border: selectedKey === item.key ? '1px solid rgba(124,58,237,0.4)' : '1px solid transparent',
-              color: selectedKey === item.key ? '#a78bfa' : 'rgba(255,255,255,0.5)',
-              fontSize: 18,
-              transition: 'all 0.2s',
-            }}
-            className="glass-hover"
-            title={item.label}
-          >
-            {item.icon}
-          </div>
-        ))}
-
-        <div style={{ flex: 1 }} />
-
-        <Dropdown menu={{ items: userMenuItems }} placement="topLeft" trigger={['click']}>
-          <Avatar
-            style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }}
-            icon={<UserOutlined />}
-          />
-        </Dropdown>
-      </div>
-    </Sider>
-
-    <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
-
-    <Modal
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <Modal
       title="我的反馈"
       open={feedbackOpen}
       onCancel={() => setFeedbackOpen(false)}
@@ -444,6 +397,133 @@ export default function NavRail() {
         ]}
       />
     </Modal>
+    </>
+  );
+
+  // ── Mobile: fixed bottom navigation bar ──────────────────────────────────
+  if (isMobile) {
+    return (
+      <>
+        <nav
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 56,
+            zIndex: 200,
+            background: 'rgba(15,12,41,0.92)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            alignItems: 'stretch',
+          }}
+        >
+          {menuItems.map((item) => {
+            const active = selectedKey === item.key;
+            return (
+              <div
+                key={item.key}
+                onClick={item.onClick}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 3,
+                  cursor: 'pointer',
+                  color: active ? '#a78bfa' : 'rgba(255,255,255,0.45)',
+                  fontSize: 20,
+                  transition: 'color 0.2s',
+                  borderTop: active ? '2px solid #a78bfa' : '2px solid transparent',
+                  paddingBottom: 2,
+                }}
+              >
+                {item.icon}
+                <span style={{ fontSize: 10, lineHeight: 1 }}>{item.label}</span>
+              </div>
+            );
+          })}
+          <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 3,
+                cursor: 'pointer',
+                paddingBottom: 2,
+              }}
+            >
+              <Avatar
+                size={22}
+                style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', cursor: 'pointer' }}
+                icon={<UserOutlined />}
+              />
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1 }}>我的</span>
+            </div>
+          </Dropdown>
+        </nav>
+        {modals}
+      </>
+    );
+  }
+
+  // ── Desktop: vertical left sidebar ────────────────────────────────────────
+  return (
+    <>
+      <Sider
+        width={64}
+        style={{
+          background: 'rgba(15,12,41,0.6)',
+          backdropFilter: 'blur(16px)',
+          borderRight: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          paddingTop: 8,
+          paddingBottom: 8,
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', gap: 4 }}>
+          {menuItems.map((item) => (
+            <div
+              key={item.key}
+              onClick={item.onClick}
+              style={{
+                width: 44, height: 44,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                borderRadius: 12, cursor: 'pointer',
+                background: selectedKey === item.key ? 'rgba(124,58,237,0.25)' : 'transparent',
+                border: selectedKey === item.key ? '1px solid rgba(124,58,237,0.4)' : '1px solid transparent',
+                color: selectedKey === item.key ? '#a78bfa' : 'rgba(255,255,255,0.5)',
+                fontSize: 18,
+                transition: 'all 0.2s',
+              }}
+              className="glass-hover"
+              title={item.label}
+            >
+              {item.icon}
+            </div>
+          ))}
+
+          <div style={{ flex: 1 }} />
+
+          <Dropdown menu={{ items: userMenuItems }} placement="topLeft" trigger={['click']}>
+            <Avatar
+              style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }}
+              icon={<UserOutlined />}
+            />
+          </Dropdown>
+        </div>
+      </Sider>
+      {modals}
     </>
   );
 }

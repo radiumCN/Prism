@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import type { Provider, AIModel, ProviderModel } from '@/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const MODEL_TYPE_COLOR: Record<string, string> = {
   chat: 'blue',
@@ -184,6 +185,7 @@ export default function ProvidersTable() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [activeTab, setActiveTab] = useState('info');
   const [form] = Form.useForm();
+  const isMobile = useIsMobile();
 
   const load = () => {
     setLoading(true);
@@ -263,57 +265,110 @@ export default function ProvidersTable() {
         </Button>
       </div>
 
-      <Table
-        dataSource={providers}
-        rowKey="id"
-        loading={loading}
-        columns={[
-          { title: '名称', dataIndex: 'name', key: 'name', render: (v) => <strong>{v}</strong> },
-          {
-            title: 'Base URL',
-            dataIndex: 'base_url',
-            key: 'base_url',
-            render: (v) => v
-              ? <code style={{ fontSize: 12 }}>{v}</code>
-              : <span style={{ opacity: 0.4 }}>—</span>,
-          },
-          {
-            title: '支持模型',
-            key: 'models',
-            width: 100,
-            render: (_, r) => (
-              <Badge
-                count={modelCounts[r.id] ?? 0}
-                showZero
-                style={{ backgroundColor: (modelCounts[r.id] ?? 0) > 0 ? '#7c3aed' : '#555' }}
-              />
-            ),
-          },
-          {
-            title: '状态',
-            dataIndex: 'status',
-            key: 'status',
-            width: 80,
-            render: (v) => <Tag color={v === 'active' ? 'green' : 'red'}>{v === 'active' ? '启用' : '禁用'}</Tag>,
-          },
-          {
-            title: '操作',
-            key: 'action',
-            width: 140,
-            render: (_, record) => (
-              <Space>
-                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>编辑</Button>
-                <Popconfirm
-                  title="删除后供应商的模型关联也将一并清除，确定继续？"
-                  onConfirm={() => handleDelete(record.id)}
-                >
-                  <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]}
-      />
+      {isMobile ? (
+        <div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '32px 0' }}><span style={{ color: 'rgba(255,255,255,0.45)' }}>加载中…</span></div>
+          ) : providers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.35)' }}>暂无供应商</div>
+          ) : providers.map((p) => (
+            <div key={p.id} style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12,
+              padding: '12px 14px',
+              marginBottom: 10,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: 15, color: 'rgba(255,255,255,0.92)' }}>{p.name}</strong>
+                    <Tag color={p.status === 'active' ? 'green' : 'red'} style={{ margin: 0 }}>
+                      {p.status === 'active' ? '启用' : '禁用'}
+                    </Tag>
+                    <Badge
+                      count={modelCounts[p.id] ?? 0}
+                      showZero
+                      style={{ backgroundColor: (modelCounts[p.id] ?? 0) > 0 ? '#7c3aed' : '#555' }}
+                    />
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>个模型</span>
+                  </div>
+                  {p.base_url && (
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', wordBreak: 'break-all' }}>
+                      <code>{p.base_url}</code>
+                    </div>
+                  )}
+                </div>
+                <Space size={6}>
+                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(p)}>编辑</Button>
+                  <Popconfirm
+                    title="删除后供应商的模型关联也将一并清除，确定继续？"
+                    onConfirm={() => handleDelete(p.id)}
+                    okText="删除" okType="danger" cancelText="取消"
+                  >
+                    <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
+                  </Popconfirm>
+                </Space>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <Table
+          dataSource={providers}
+          rowKey="id"
+          loading={loading}
+          scroll={{ x: 'max-content' }}
+          columns={[
+            { title: '名称', dataIndex: 'name', key: 'name', width: 120, render: (v) => <strong>{v}</strong> },
+            {
+              title: 'Base URL',
+              dataIndex: 'base_url',
+              key: 'base_url',
+              width: 220,
+              ellipsis: true,
+              render: (v) => v
+                ? <code style={{ fontSize: 12 }}>{v}</code>
+                : <span style={{ opacity: 0.4 }}>—</span>,
+            },
+            {
+              title: '支持模型',
+              key: 'models',
+              width: 100,
+              render: (_, r) => (
+                <Badge
+                  count={modelCounts[r.id] ?? 0}
+                  showZero
+                  style={{ backgroundColor: (modelCounts[r.id] ?? 0) > 0 ? '#7c3aed' : '#555' }}
+                />
+              ),
+            },
+            {
+              title: '状态',
+              dataIndex: 'status',
+              key: 'status',
+              width: 80,
+              render: (v) => <Tag color={v === 'active' ? 'green' : 'red'}>{v === 'active' ? '启用' : '禁用'}</Tag>,
+            },
+            {
+              title: '操作',
+              key: 'action',
+              width: 140,
+              render: (_, record) => (
+                <Space>
+                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>编辑</Button>
+                  <Popconfirm
+                    title="删除后供应商的模型关联也将一并清除，确定继续？"
+                    onConfirm={() => handleDelete(record.id)}
+                  >
+                    <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
+                  </Popconfirm>
+                </Space>
+              ),
+            },
+          ]}
+        />
+      )}
 
       <Modal
         title={
@@ -325,7 +380,7 @@ export default function ProvidersTable() {
         open={modalOpen}
         onCancel={handleClose}
         footer={null}
-        width={640}
+        width="min(640px, calc(100vw - 24px))"
         destroyOnHidden
       >
         <Tabs

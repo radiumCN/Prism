@@ -19,6 +19,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { createChatProvider, type ChatMessage } from '@/lib/chatProvider';
 import type { ModelInfo, Message, Skill, MCPServer } from '@/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const { Text } = Typography;
 
@@ -38,6 +39,7 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
   const { token } = theme.useToken();
   const { message: antMessage } = App.useApp();
   const accessToken = useAuthStore((s) => s.accessToken) || '';
+  const isMobile = useIsMobile();
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -218,14 +220,15 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Toolbar: model + skill + MCP */}
       <div style={{
-        padding: '8px 16px',
+        padding: isMobile ? '6px 10px' : '8px 16px',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
         flexWrap: 'wrap',
+        flexShrink: 0,
       }}>
-        <ThunderboltOutlined style={{ color: token.colorPrimary }} />
+        <ThunderboltOutlined style={{ color: token.colorPrimary, flexShrink: 0 }} />
         <Select
           size="small"
           placeholder="选择模型"
@@ -235,14 +238,16 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
             const found = models.find((m) => m.provider_id === pid && m.model_id === mid);
             if (found) setSelectedModel(found);
           }}
-          style={{ minWidth: 200 }}
+          style={{ flex: 1, minWidth: 0, maxWidth: isMobile ? 'none' : 280 }}
           options={models.map((m) => ({
             value: `${m.provider_id}:${m.model_id}`,
-            label: `${m.provider_name} / ${m.display_name}`,
+            label: isMobile
+              ? m.display_name
+              : `${m.provider_name} / ${m.display_name}`,
           }))}
         />
 
-        {/* Skill selector — always visible */}
+        {/* Skill selector */}
         <Popover
           trigger="click"
           placement="bottomLeft"
@@ -282,13 +287,16 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
             style={{
               color: selectedSkillIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.5)',
               borderColor: selectedSkillIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.2)',
+              flexShrink: 0,
             }}
           >
-            {selectedSkillIds.length > 0 ? `Skill (${selectedSkillIds.length})` : 'Skill'}
+            {isMobile
+              ? (selectedSkillIds.length > 0 ? `${selectedSkillIds.length}` : null)
+              : (selectedSkillIds.length > 0 ? `Skill (${selectedSkillIds.length})` : 'Skill')}
           </Button>
         </Popover>
 
-        {/* MCP selector — always visible */}
+        {/* MCP selector */}
         <Popover
           trigger="click"
           placement="bottomLeft"
@@ -339,41 +347,36 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
             style={{
               color: selectedMCPIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.5)',
               borderColor: selectedMCPIds.length > 0 ? token.colorPrimary : 'rgba(255,255,255,0.2)',
+              flexShrink: 0,
             }}
           >
-            {selectedMCPIds.length > 0 ? `MCP (${selectedMCPIds.length})` : 'MCP'}
+            {isMobile
+              ? (selectedMCPIds.length > 0 ? `${selectedMCPIds.length}` : null)
+              : (selectedMCPIds.length > 0 ? `MCP (${selectedMCPIds.length})` : 'MCP')}
           </Button>
         </Popover>
 
-        {/* Active skill tags for the current conversation */}
-        {conversationId && activeConvSkillIds.length > 0 && skills.length > 0 && (
+        {/* Active skill / MCP tags — desktop only (mobile: too narrow) */}
+        {!isMobile && conversationId && activeConvSkillIds.length > 0 && skills.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
             <BookOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
             {activeConvSkillIds.map((sid) => {
               const sk = skills.find((s) => s.id === sid);
               return sk ? (
-                <Tag
-                  key={sid}
-                  color="purple"
-                  style={{ fontSize: 11, padding: '0 6px', margin: 0 }}
-                >
+                <Tag key={sid} color="purple" style={{ fontSize: 11, padding: '0 6px', margin: 0 }}>
                   {sk.icon ? `${sk.icon} ` : ''}{sk.name}
                 </Tag>
               ) : null;
             })}
           </div>
         )}
-        {conversationId && activeConvMCPIds.length > 0 && mcpServers.length > 0 && (
+        {!isMobile && conversationId && activeConvMCPIds.length > 0 && mcpServers.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
             <ToolOutlined style={{ color: '#13c2c2', fontSize: 12 }} />
             {activeConvMCPIds.map((mid) => {
               const sv = mcpServers.find((s) => s.id === mid);
               return sv ? (
-                <Tag
-                  key={mid}
-                  color="cyan"
-                  style={{ fontSize: 11, padding: '0 6px', margin: 0 }}
-                >
+                <Tag key={mid} color="cyan" style={{ fontSize: 11, padding: '0 6px', margin: 0 }}>
                   {sv.name}
                 </Tag>
               ) : null;
@@ -383,24 +386,24 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
       </div>
 
       {/* Messages area */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? '8px 10px' : '16px' }}>
         {isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
             <Spin />
           </div>
         ) : showWelcome ? (
-          <div style={{ maxWidth: 600, margin: '60px auto' }}>
+          <div style={{ maxWidth: 600, margin: isMobile ? '24px auto' : '60px auto', padding: isMobile ? '0 4px' : 0 }}>
             <Welcome
               icon={
                 <div style={{
-                  width: 56,
-                  height: 56,
+                  width: isMobile ? 44 : 56,
+                  height: isMobile ? 44 : 56,
                   borderRadius: 16,
                   background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 28,
+                  fontSize: isMobile ? 22 : 28,
                 }}>
                   ⚡
                 </div>
@@ -408,7 +411,7 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
               title="Prism AI 助手"
               description="我可以帮助你完成对话、创作、编程等各种任务，选择一个模型开始聊天吧！"
             />
-            <div style={{ marginTop: 24 }}>
+            <div style={{ marginTop: isMobile ? 16 : 24 }}>
               <Prompts
                 title="试试这些话题"
                 items={PROMPTS}
@@ -422,7 +425,7 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
             role={{
               user: {
                 placement: 'end',
-                avatar: (
+                avatar: isMobile ? undefined : (
                   <Avatar icon={<UserOutlined />} style={{ background: '#7c3aed' }} />
                 ),
                 contentRender(content: { msg: ChatMessage; status: string }) {
@@ -431,7 +434,7 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
               },
               assistant: {
                 placement: 'start',
-                avatar: (
+                avatar: isMobile ? undefined : (
                   <Avatar icon={<RobotOutlined />} style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }} />
                 ),
                 contentRender(content: { msg: ChatMessage; status: string }) {
@@ -486,15 +489,21 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
       </div>
 
       {/* Sender */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{
+        padding: isMobile ? '8px 10px' : '12px 16px',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        flexShrink: 0,
+      }}>
         {editingId !== null && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <EditOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
-            <Text style={{ color: token.colorPrimary, fontSize: 12 }}>编辑模式：修改后发送将替换该消息及后续回复</Text>
+            <EditOutlined style={{ color: token.colorPrimary, fontSize: 12, flexShrink: 0 }} />
+            <Text style={{ color: token.colorPrimary, fontSize: 12 }}>
+              {isMobile ? '编辑模式，发送将替换后续回复' : '编辑模式：修改后发送将替换该消息及后续回复'}
+            </Text>
             <Button
               size="small"
               type="text"
-              style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 'auto' }}
+              style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 'auto', flexShrink: 0 }}
               onClick={() => { setEditingId(null); setSenderValue(''); }}
             >
               取消
@@ -507,7 +516,7 @@ export default function ChatInterface({ conversationId, onConversationCreated }:
           loading={isRequesting}
           onSubmit={handleSubmit}
           onCancel={abort}
-          placeholder="输入消息，Shift+Enter 换行，Enter 发送"
+          placeholder={isMobile ? '输入消息…' : '输入消息，Shift+Enter 换行，Enter 发送'}
           style={{
             background: 'rgba(255,255,255,0.06)',
             border: `1px solid ${editingId !== null ? token.colorPrimary : 'rgba(255,255,255,0.12)'}`,

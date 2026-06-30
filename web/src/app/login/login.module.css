@@ -318,3 +318,41 @@
   transform: translateY(0);
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4) !important;
 }
+
+/* ── 小屏幕适配 (< 480px) ──────────────────────────────────── */
+@media (max-width: 480px) {
+  .page {
+    padding: 16px;
+    align-items: center;
+  }
+
+  .card {
+    padding: 32px 24px 28px;
+    border-radius: 20px;
+  }
+
+  .logoIcon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    margin-bottom: 12px;
+  }
+
+  .logoImg {
+    width: 64px;
+    height: 64px;
+  }
+
+  .logoTitle {
+    font-size: 24px;
+  }
+
+  .logoWrap {
+    margin-bottom: 28px;
+  }
+
+  .sendCodeBtn {
+    padding: 0 12px !important;
+    font-size: 12px !important;
+  }
+}

@@ -4,18 +4,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Form, Input, Button, Select, Card, Spin, Empty, App,
   Typography, Tooltip, Radio, Tabs, Badge, Tag, Space, Divider, Switch, InputNumber,
+  Segmented,
 } from 'antd';
 import {
   VideoCameraOutlined, DownloadOutlined, ReloadOutlined,
   HistoryOutlined, ThunderboltOutlined, PlayCircleOutlined,
   LinkOutlined, PlusOutlined, DeleteOutlined, ClockCircleOutlined,
-  CheckCircleOutlined,
+  CheckCircleOutlined, SettingOutlined, AppstoreOutlined,
 } from '@ant-design/icons';
 import AppLayout from '@/components/Layout/AppLayout';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { ModelInfo } from '@/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -230,6 +232,9 @@ export default function VideoPage() {
   const [referenceImages, setReferenceImages] = useState<string[]>(['']);
   const [form] = Form.useForm<VideoFormValues>();
   const [selectedModelKey, setSelectedModelKey] = useState('');
+  const isMobile = useIsMobile();
+  // Mobile: which panel is visible ('result' | 'form')
+  const [mobilePanel, setMobilePanel] = useState<'result' | 'form'>('result');
 
   const selectedModel = models.find((m) => `${m.provider_id}:${m.model_id}` === selectedModelKey);
   const selectedModelName = selectedModel?.model_name?.toLowerCase() ?? '';
@@ -309,6 +314,8 @@ export default function VideoPage() {
       setVideos((prev) => [newVid, ...prev]);
       setActiveTab('generate');
       message.success('视频生成成功');
+      // On mobile: auto-switch to result panel after generation
+      if (isMobile) setMobilePanel('result');
       loadHistory(false);
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : '生成失败，请检查模型配置');
@@ -345,14 +352,43 @@ export default function VideoPage() {
         </div>
       )}
 
-      <div style={{ padding: 24, overflow: 'auto', height: '100%' }}>
-        <Title level={3} style={{ color: 'rgba(255,255,255,0.9)', marginBottom: 24 }}>
-          <VideoCameraOutlined style={{ marginRight: 8 }} />AI 视频
-        </Title>
+      {/* Mobile panel switcher */}
+      {isMobile && (
+        <div style={{
+          padding: '8px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 600 }}>
+            <VideoCameraOutlined style={{ marginRight: 6 }} />AI 视频
+          </span>
+          <Segmented
+            size="small"
+            value={mobilePanel}
+            onChange={(v) => setMobilePanel(v as 'result' | 'form')}
+            options={[
+              { value: 'result', label: <span><AppstoreOutlined /> 结果</span> },
+              { value: 'form', label: <span><SettingOutlined /> 参数</span> },
+            ]}
+            style={{ background: 'rgba(255,255,255,0.08)' }}
+          />
+        </div>
+      )}
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div style={{ padding: isMobile ? '12px 14px' : 24, overflow: 'auto', height: '100%' }}>
+        {!isMobile && (
+          <Title level={3} style={{ color: 'rgba(255,255,255,0.9)', marginBottom: 24 }}>
+            <VideoCameraOutlined style={{ marginRight: 8 }} />AI 视频
+          </Title>
+        )}
+
+        <div style={{ display: 'flex', gap: isMobile ? 0 : 24, alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
           {/* ── Left: form ── */}
-          <Card className="glass" style={{ width: 360, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
+          {(!isMobile || mobilePanel === 'form') && (
+          <Card className="glass" style={{ width: isMobile ? '100%' : 360, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
             <Form
               form={form} layout="vertical" onFinish={handleGenerate}
               initialValues={{ resolution: '1080P', ratio: '16:9', duration: 5, audioSetting: 'auto', watermark: false }}
@@ -514,9 +550,11 @@ export default function VideoPage() {
               </Form.Item>
             </Form>
           </Card>
+          )}
 
           {/* ── Right: results + history ── */}
-          <div style={{ flex: 1, minWidth: 300 }}>
+          {(!isMobile || mobilePanel === 'result') && (
+          <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
             <Tabs
               activeKey={activeTab}
               onChange={setActiveTab}
@@ -551,9 +589,22 @@ export default function VideoPage() {
 
                       {/* ── Empty state ── */}
                       {!generating && videos.length === 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: 16 }}>
-                          <VideoCameraOutlined style={{ fontSize: 56, color: 'rgba(255,255,255,0.1)' }} />
-                          <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>填写左侧表单，点击「生成视频」开始创作</Text>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: isMobile ? '48px 0' : '80px 0', gap: 16 }}>
+                          <VideoCameraOutlined style={{ fontSize: isMobile ? 44 : 56, color: 'rgba(255,255,255,0.1)' }} />
+                          {isMobile ? (
+                            <Button
+                              type="primary"
+                              icon={<SettingOutlined />}
+                              onClick={() => setMobilePanel('form')}
+                              style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', border: 'none' }}
+                            >
+                              去配置参数并生成
+                            </Button>
+                          ) : (
+                            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>
+                              填写左侧表单，点击「生成视频」开始创作
+                            </Text>
+                          )}
                         </div>
                       )}
 
@@ -632,6 +683,7 @@ export default function VideoPage() {
               ]}
             />
           </div>
+          )}
         </div>
       </div>
     </AppLayout>

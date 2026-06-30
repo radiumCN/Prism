@@ -9,6 +9,7 @@ import type { UploadFile } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ImportOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import type { Skill } from '@/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: '启用' },
@@ -28,6 +29,7 @@ export default function SkillsTable() {
   const [importFile, setImportFile] = useState<UploadFile | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ created: number; failed: string[] | null; total: number } | null>(null);
+  const isMobile = useIsMobile();
 
   const load = () => {
     setLoading(true);
@@ -149,14 +151,62 @@ export default function SkillsTable() {
         </Button>
       </div>
 
-      <Table
-        rowKey="id"
-        dataSource={skills}
-        columns={columns}
-        loading={loading}
-        pagination={{ pageSize: 20 }}
-        size="small"
-      />
+      {isMobile ? (
+        <div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.45)' }}>加载中…</div>
+          ) : skills.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.35)' }}>暂无 Skill</div>
+          ) : skills.map((s) => (
+            <div key={s.id} style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12,
+              padding: '12px 14px',
+              marginBottom: 10,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 22 }}>{s.icon || '🤖'}</span>
+                    <strong style={{ fontSize: 15, color: 'rgba(255,255,255,0.92)' }}>{s.name}</strong>
+                    <Tag color={s.status === 'active' ? 'green' : 'default'} style={{ margin: 0 }}>
+                      {s.status === 'active' ? '启用' : '禁用'}
+                    </Tag>
+                  </div>
+                  {s.description && (
+                    <div style={{
+                      fontSize: 13,
+                      color: 'rgba(255,255,255,0.5)',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}>
+                      {s.description}
+                    </div>
+                  )}
+                </div>
+                <Space size={4}>
+                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(s)}>编辑</Button>
+                  <Popconfirm title="确定删除？" onConfirm={() => handleDelete(s.id)} okText="删除" okType="danger" cancelText="取消">
+                    <Button size="small" danger icon={<DeleteOutlined />} />
+                  </Popconfirm>
+                </Space>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <Table
+          rowKey="id"
+          dataSource={skills}
+          columns={columns}
+          loading={loading}
+          pagination={{ pageSize: 20 }}
+          size="small"
+        />
+      )}
 
       {/* Import modal */}
       <Modal
@@ -220,7 +270,7 @@ export default function SkillsTable() {
         confirmLoading={saving}
         okText="保存"
         cancelText="取消"
-        width={640}
+        width="min(640px, calc(100vw - 24px))"
         destroyOnHidden
       >
         <Form form={form} layout="vertical">

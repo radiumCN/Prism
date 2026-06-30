@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import type { MCPServer } from '@/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const { Text, Paragraph } = Typography;
 
@@ -523,6 +524,7 @@ export default function MCPTable() {
   // marketplace filter
   const [marketCat, setMarketCat] = useState('全部');
   const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
 
   const load = () => {
     setLoading(true);
@@ -681,15 +683,72 @@ export default function MCPTable() {
           </Button>
         </Space>
       </div>
-      <Table
-        rowKey="id"
-        dataSource={servers}
-        columns={columns}
-        loading={loading}
-        pagination={{ pageSize: 20 }}
-        size="small"
-        locale={{ emptyText: '暂无 MCP Server，从市场安装或手动添加' }}
-      />
+      {isMobile ? (
+        <div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.45)' }}>加载中…</div>
+          ) : servers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.35)' }}>
+              暂无 MCP Server，从市场安装或手动添加
+            </div>
+          ) : servers.map((s) => {
+            const marketItem = MARKETPLACE.find((x) => x.name.toLowerCase() === s.name.toLowerCase());
+            return (
+              <div key={s.id} style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 12,
+                padding: '12px 14px',
+                marginBottom: 10,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 20 }}>{marketItem?.icon || '🔌'}</span>
+                      <strong style={{ fontSize: 15, color: 'rgba(255,255,255,0.92)' }}>{s.name}</strong>
+                      <Tag color={s.status === 'active' ? 'green' : 'default'} style={{ margin: 0 }}>
+                        {s.status === 'active' ? '启用' : '禁用'}
+                      </Tag>
+                      {s.has_auth && (
+                        <Tooltip title="已配置 Authorization">
+                          <SafetyOutlined style={{ color: '#52c41a' }} />
+                        </Tooltip>
+                      )}
+                    </div>
+                    {s.description && (
+                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>
+                        {s.description}
+                      </div>
+                    )}
+                    {s.url && (
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', wordBreak: 'break-all' }}>
+                        <code>{s.url}</code>
+                      </div>
+                    )}
+                  </div>
+                  <Space size={4} style={{ flexShrink: 0 }}>
+                    <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(s)}>编辑</Button>
+                    <Popconfirm title="确定删除？" onConfirm={() => handleDelete(s.id)} okText="删除" okType="danger" cancelText="取消">
+                      <Button size="small" danger icon={<DeleteOutlined />} />
+                    </Popconfirm>
+                  </Space>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <Table
+          rowKey="id"
+          dataSource={servers}
+          columns={columns}
+          loading={loading}
+          pagination={{ pageSize: 20 }}
+          size="small"
+          scroll={{ x: 'max-content' }}
+          locale={{ emptyText: '暂无 MCP Server，从市场安装或手动添加' }}
+        />
+      )}
     </>
   );
 
@@ -843,7 +902,7 @@ export default function MCPTable() {
         confirmLoading={saving}
         okText="保存"
         cancelText="取消"
-        width={580}
+        width="min(580px, calc(100vw - 24px))"
         destroyOnHidden
       >
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
@@ -909,7 +968,7 @@ export default function MCPTable() {
         onCancel={() => setJsonConfigOpen(false)}
         okText="解析并配置"
         cancelText="取消"
-        width={560}
+        width="min(560px, calc(100vw - 24px))"
         destroyOnHidden
       >
         <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 12 }}>

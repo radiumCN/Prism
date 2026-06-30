@@ -7,6 +7,7 @@ import {
 import { ReloadOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface UserRow {
   id: number;
@@ -25,6 +26,7 @@ export default function UsersTable() {
   const currentUser = useAuthStore((s) => s.user);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -154,14 +156,79 @@ export default function UsersTable() {
           共 {users.length} 名用户
         </span>
       </Space>
-      <Table<UserRow>
-        rowKey="id"
-        dataSource={users}
-        columns={columns}
-        loading={loading}
-        pagination={{ pageSize: 20 }}
-        size="small"
-      />
+      {isMobile ? (
+        <div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.45)' }}>加载中…</div>
+          ) : users.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.35)' }}>暂无用户</div>
+          ) : users.map((u) => {
+            const isSelf = u.id === currentUser?.id;
+            return (
+              <div key={u.id} style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 12,
+                padding: '12px 14px',
+                marginBottom: 10,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: 15, color: 'rgba(255,255,255,0.92)' }}>{u.username}</strong>
+                      {isSelf && <Tag color="purple" style={{ margin: 0 }}>我</Tag>}
+                      <Tag color={ROLE_COLOR[u.role] ?? 'default'} style={{ margin: 0 }}>{u.role === 'admin' ? '管理员' : '普通用户'}</Tag>
+                      <Tag color={STATUS_COLOR[u.status] ?? 'default'} style={{ margin: 0 }}>{u.status === 'active' ? '正常' : '已禁用'}</Tag>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 8 }}>{u.email}</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <Tooltip title={isSelf ? '不能修改自己的角色' : ''}>
+                        <Select
+                          value={u.role}
+                          disabled={isSelf}
+                          size="small"
+                          style={{ width: 90 }}
+                          onChange={(val) => handleUpdate(u.id, { role: val })}
+                          options={[
+                            { label: '管理员', value: 'admin' },
+                            { label: '普通用户', value: 'user' },
+                          ]}
+                        />
+                      </Tooltip>
+                      <Tooltip title={isSelf ? '不能禁用自己' : ''}>
+                        <Select
+                          value={u.status}
+                          disabled={isSelf}
+                          size="small"
+                          style={{ width: 90 }}
+                          onChange={(val) => handleUpdate(u.id, { status: val })}
+                          options={[
+                            { label: '正常', value: 'active' },
+                            { label: '已禁用', value: 'disabled' },
+                          ]}
+                        />
+                      </Tooltip>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textAlign: 'right', flexShrink: 0 }}>
+                    {new Date(u.created_at).toLocaleDateString('zh-CN')}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <Table<UserRow>
+          rowKey="id"
+          dataSource={users}
+          columns={columns}
+          loading={loading}
+          pagination={{ pageSize: 20 }}
+          size="small"
+          scroll={{ x: 'max-content' }}
+        />
+      )}
     </div>
   );
 }

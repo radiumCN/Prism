@@ -4,8 +4,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Form, Input, Button, Select, Card, Spin, Empty, App,
   Typography, Tooltip, Radio, InputNumber, Divider, Tag, Space,
-  Tabs, Badge,
+  Tabs, Badge, Segmented,
 } from 'antd';
+import { SettingOutlined, AppstoreOutlined } from '@ant-design/icons';
 import {
   PictureOutlined, DownloadOutlined, ReloadOutlined,
   HistoryOutlined, ThunderboltOutlined, ExpandOutlined,
@@ -16,6 +17,7 @@ import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { ModelInfo } from '@/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -324,6 +326,7 @@ export default function ImagePage() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const [mounted, setMounted] = useState(false);
+  const isMobile = useIsMobile();
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [generating, setGenerating] = useState(false);
   const [images, setImages] = useState<GeneratedImage[]>([]);
@@ -332,6 +335,8 @@ export default function ImagePage() {
   const [expandedUrl, setExpandedUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('generate');
   const [selectedModelKey, setSelectedModelKey] = useState('');
+  // Mobile: which panel is visible ('result' | 'form')
+  const [mobilePanel, setMobilePanel] = useState<'result' | 'form'>('result');
   const [form] = Form.useForm<ImageFormValues>();
 
   useEffect(() => { setMounted(true); }, []);
@@ -413,6 +418,8 @@ export default function ImagePage() {
       }));
       setImages((prev) => [...newImgs, ...prev]);
       message.success(`成功生成 ${newImgs.length} 张图像`);
+      // On mobile: auto-switch to result panel after generation
+      if (isMobile) setMobilePanel('result');
       // Refresh history silently so the history tab stays up to date
       loadHistory(false);
     } catch (err: unknown) {
@@ -458,15 +465,44 @@ export default function ImagePage() {
         </div>
       )}
 
-      <div style={{ padding: 24, overflow: 'auto', height: '100%' }}>
-        <Title level={3} style={{ color: 'rgba(255,255,255,0.9)', marginBottom: 24 }}>
-          <PictureOutlined style={{ marginRight: 8 }} />
-          AI 绘图
-        </Title>
+      {/* Mobile panel switcher */}
+      {isMobile && (
+        <div style={{
+          padding: '8px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 600 }}>
+            <PictureOutlined style={{ marginRight: 6 }} />AI 绘图
+          </span>
+          <Segmented
+            size="small"
+            value={mobilePanel}
+            onChange={(v) => setMobilePanel(v as 'result' | 'form')}
+            options={[
+              { value: 'result', label: <span><AppstoreOutlined /> 结果</span> },
+              { value: 'form', label: <span><SettingOutlined /> 参数</span> },
+            ]}
+            style={{ background: 'rgba(255,255,255,0.08)' }}
+          />
+        </div>
+      )}
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div style={{ padding: isMobile ? '12px 14px' : 24, overflow: 'auto', height: '100%' }}>
+        {!isMobile && (
+          <Title level={3} style={{ color: 'rgba(255,255,255,0.9)', marginBottom: 24 }}>
+            <PictureOutlined style={{ marginRight: 8 }} />
+            AI 绘图
+          </Title>
+        )}
+
+        <div style={{ display: 'flex', gap: isMobile ? 0 : 24, alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
           {/* Left panel: form */}
-          <Card className="glass" style={{ width: 360, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
+          {(!isMobile || mobilePanel === 'form') && (
+          <Card className="glass" style={{ width: isMobile ? '100%' : 360, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
             <Form
               form={form}
               layout="vertical"
@@ -587,9 +623,11 @@ export default function ImagePage() {
               </Form.Item>
             </Form>
           </Card>
+          )}
 
           {/* Right panel: results + history */}
-          <div style={{ flex: 1, minWidth: 300 }}>
+          {(!isMobile || mobilePanel === 'result') && (
+          <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
             <Tabs
               activeKey={activeTab}
               onChange={setActiveTab}
@@ -627,12 +665,23 @@ export default function ImagePage() {
                       {!generating && images.length === 0 && (
                         <div style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'center',
-                          justifyContent: 'center', padding: '80px 0', gap: 16,
+                          justifyContent: 'center', padding: isMobile ? '48px 0' : '80px 0', gap: 16,
                         }}>
-                          <PictureOutlined style={{ fontSize: 56, color: 'rgba(255,255,255,0.1)' }} />
-                          <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>
-                            填写左侧表单，点击「生成图像」开始创作
-                          </Text>
+                          <PictureOutlined style={{ fontSize: isMobile ? 44 : 56, color: 'rgba(255,255,255,0.1)' }} />
+                          {isMobile ? (
+                            <Button
+                              type="primary"
+                              icon={<SettingOutlined />}
+                              onClick={() => setMobilePanel('form')}
+                              style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', border: 'none' }}
+                            >
+                              去配置参数并生成
+                            </Button>
+                          ) : (
+                            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>
+                              填写左侧表单，点击「生成图像」开始创作
+                            </Text>
+                          )}
                         </div>
                       )}
                       {images.length > 0 && (
@@ -720,6 +769,7 @@ export default function ImagePage() {
               ]}
             />
           </div>
+          )}
         </div>
       </div>
     </AppLayout>

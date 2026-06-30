@@ -51,6 +51,23 @@ body {
   max-width: 85% !important;
 }
 
+@media (max-width: 767px) {
+  .ant-bubble {
+    max-width: 92% !important;
+  }
+
+  /* Make Ant Design modals fit mobile screens */
+  .ant-modal {
+    max-width: calc(100vw - 24px) !important;
+    margin: 12px auto !important;
+  }
+
+  /* Ant Design table: show horizontal scroll hint */
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+}
+
 /* Page transition */
 @keyframes page-enter {
   from {

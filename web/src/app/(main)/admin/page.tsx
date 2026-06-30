@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Tabs, Card, Form, Input, Button, Switch, App, Typography, Divider, Alert } from 'antd';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/Layout/AppLayout';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import ProvidersTable from '@/components/Admin/ProvidersTable';
 import ModelsTable from '@/components/Admin/ModelsTable';
 import SkillsTable from '@/components/Admin/SkillsTable';
@@ -20,6 +21,7 @@ export default function AdminPage() {
   const router = useRouter();
   const isAdmin = useAuthStore((s) => s.isAdmin());
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
+  const isMobile = useIsMobile();
   const [settingsForm] = Form.useForm();
   const [savingSettings, setSavingSettings] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -62,75 +64,81 @@ export default function AdminPage() {
 
   if (!mounted || !isAdmin) return null;
 
+  const cardStyle = {
+    border: '1px solid rgba(255,255,255,0.1)',
+  };
+  const cardBodyStyle = { padding: isMobile ? 10 : 24 };
+
   return (
     <AppLayout>
-      <div style={{ padding: 24, overflow: 'auto', height: '100%' }}>
-        <Title level={3} style={{ color: 'rgba(255,255,255,0.9)', marginBottom: 24 }}>
+      <div style={{ padding: isMobile ? '12px 10px' : 24, overflow: 'auto', height: '100%' }}>
+        <Title level={isMobile ? 5 : 3} style={{ color: 'rgba(255,255,255,0.9)', marginBottom: isMobile ? 12 : 24 }}>
           管理后台
         </Title>
 
         <Tabs
           defaultActiveKey="providers"
+          size={isMobile ? 'small' : 'middle'}
           items={[
             {
               key: 'providers',
-              label: '供应商管理',
+              label: '供应商',
               children: (
-                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Card className="glass" style={cardStyle} styles={{ body: cardBodyStyle }}>
                   <ProvidersTable />
                 </Card>
               ),
             },
             {
               key: 'models',
-              label: '模型管理',
+              label: '模型',
               children: (
-                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Card className="glass" style={cardStyle} styles={{ body: cardBodyStyle }}>
                   <ModelsTable />
                 </Card>
               ),
             },
             {
               key: 'skills',
-              label: 'Skill 管理',
+              label: 'Skill',
               children: (
-                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Card className="glass" style={cardStyle} styles={{ body: cardBodyStyle }}>
                   <SkillsTable />
                 </Card>
               ),
             },
             {
               key: 'mcp',
-              label: 'MCP 配置',
+              label: 'MCP',
               children: (
-                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Card className="glass" style={cardStyle} styles={{ body: cardBodyStyle }}>
                   <MCPTable />
                 </Card>
               ),
             },
             {
               key: 'users',
-              label: '用户管理',
+              label: '用户',
               children: (
-                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Card className="glass" style={cardStyle} styles={{ body: cardBodyStyle }}>
                   <UsersTable />
                 </Card>
               ),
             },
             {
               key: 'feedback',
-              label: '反馈列表',
+              label: '反馈',
               children: (
-                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Card className="glass" style={cardStyle} styles={{ body: cardBodyStyle }}>
                   <FeedbackList />
                 </Card>
               ),
             },
             {
               key: 'settings',
-              label: '系统设置',
+              label: '设置',
               children: (
-                <Card className="glass" style={{ border: '1px solid rgba(255,255,255,0.1)', maxWidth: 640 }}>
+                <Card className="glass" style={{ ...cardStyle, maxWidth: 640 }} styles={{ body: cardBodyStyle }}>
                   <Form form={settingsForm} layout="vertical" onFinish={handleSaveSettings}>
 
                     {/* ── 基础设置 ── */}

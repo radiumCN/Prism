@@ -7,6 +7,7 @@ import {
 } from 'antd';
 import { ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import { api, BASE } from '@/lib/api';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const IMG_BASE = BASE.replace(/\/api$/, '');
 
@@ -23,9 +24,9 @@ interface FeedbackRow {
 }
 
 const TYPE_COLOR: Record<string, string> = { general: 'blue', bug: 'red', feature: 'green' };
-const TYPE_LABEL: Record<string, string> = { general: '一般', bug: '问题反馈', feature: '功能建议' };
+const TYPE_LABEL: Record<string, string> = { general: '\u5efa\u8bae', bug: '\u95ee\u9898\u53cd\u9988', feature: '\u529f\u80fd\u5efa\u8bae' };
 const STATUS_COLOR: Record<string, string> = { pending: 'orange', reviewed: 'blue', closed: 'default' };
-const STATUS_LABEL: Record<string, string> = { pending: '待处理', reviewed: '已查阅', closed: '已关闭' };
+const STATUS_LABEL: Record<string, string> = { pending: '\u5f85\u5904\u7406', reviewed: '\u5df2\u5904\u7406', closed: '\u5df2\u5173\u95ed' };
 
 export default function FeedbackList() {
   const { message } = App.useApp();
@@ -35,6 +36,7 @@ export default function FeedbackList() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const isMobile = useIsMobile();
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -42,7 +44,7 @@ export default function FeedbackList() {
       const data = await api.get<FeedbackRow[]>('/admin/feedback');
       setList(data ?? []);
     } catch (err: unknown) {
-      message.error(err instanceof Error ? err.message : '加载失败');
+      message.error(err instanceof Error ? err.message : '\u52a0\u8f7d\u5931\u8d25');
     } finally {
       setLoading(false);
     }
@@ -62,13 +64,13 @@ export default function FeedbackList() {
     try {
       const values = await form.validateFields();
       await api.put(`/admin/feedback/${selected.id}`, values);
-      message.success('已更新');
+      message.success('\u5df2\u4fdd\u5b58');
       setList((prev) =>
         prev.map((f) => (f.id === selected.id ? { ...f, ...values } : f))
       );
       setDrawerOpen(false);
     } catch (err: unknown) {
-      message.error(err instanceof Error ? err.message : '更新失败');
+      message.error(err instanceof Error ? err.message : '\u4fdd\u5b58\u5931\u8d25');
     } finally {
       setSaving(false);
     }
@@ -77,39 +79,39 @@ export default function FeedbackList() {
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     {
-      title: '用户',
+      title: '\u7528\u6237',
       dataIndex: 'user',
       render: (_: unknown, row: FeedbackRow) =>
         row.user ? `${row.user.username} (${row.user.email})` : `UID:${row.user_id}`,
     },
     {
-      title: '类型',
+      title: '\u7c7b\u578b',
       dataIndex: 'type',
       width: 110,
       render: (v: string) => <Tag color={TYPE_COLOR[v] ?? 'default'}>{TYPE_LABEL[v] ?? v}</Tag>,
     },
     {
-      title: '内容',
+      title: '\u5185\u5bb9',
       dataIndex: 'content',
       ellipsis: true,
     },
     {
-      title: '状态',
+      title: '\u72b6\u6001',
       dataIndex: 'status',
       width: 90,
       render: (v: string) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{STATUS_LABEL[v] ?? v}</Tag>,
     },
     {
-      title: '提交时间',
+      title: '\u63d0\u4ea4\u65f6\u95f4',
       dataIndex: 'created_at',
       width: 160,
       render: (v: string) => new Date(v).toLocaleString('zh-CN'),
     },
     {
-      title: '操作',
+      title: '\u64cd\u4f5c',
       width: 80,
       render: (_: unknown, row: FeedbackRow) => (
-        <Tooltip title="查看 / 处理">
+        <Tooltip title={'\u67e5\u770b / \u5904\u7406'}>
           <Button
             type="link"
             icon={<EyeOutlined />}
@@ -125,30 +127,94 @@ export default function FeedbackList() {
     <div>
       <Space style={{ marginBottom: 12 }}>
         <Button icon={<ReloadOutlined />} onClick={fetchList} loading={loading}>
-          刷新
+          {'\u5237\u65b0'}
         </Button>
         <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
-          共 {list.length} 条
+          {'\u5171'} {list.length} {'\u6761'}
         </span>
       </Space>
 
-      <Table<FeedbackRow>
-        rowKey="id"
-        dataSource={list}
-        columns={columns}
-        loading={loading}
-        pagination={{ pageSize: 20 }}
-        size="small"
-      />
+      {isMobile ? (
+        <div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.45)' }}>
+              {'\u52a0\u8f7d\u4e2d\u2026'}
+            </div>
+          ) : list.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.35)' }}>
+              {'\u6682\u65e0\u53cd\u9988'}
+            </div>
+          ) : list.map((row) => (
+            <div key={row.id} style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12,
+              padding: '12px 14px',
+              marginBottom: 10,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
+                      {row.user ? row.user.username : `UID:${row.user_id}`}
+                    </span>
+                    <Tag color={TYPE_COLOR[row.type] ?? 'default'} style={{ margin: 0 }}>
+                      {TYPE_LABEL[row.type] ?? row.type}
+                    </Tag>
+                    <Tag color={STATUS_COLOR[row.status] ?? 'default'} style={{ margin: 0 }}>
+                      {STATUS_LABEL[row.status] ?? row.status}
+                    </Tag>
+                  </div>
+                  {row.content && (
+                    <div style={{
+                      fontSize: 13,
+                      color: 'rgba(255,255,255,0.55)',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      marginBottom: 6,
+                    }}>
+                      {row.content}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+                    {new Date(row.created_at).toLocaleString('zh-CN')}
+                  </div>
+                </div>
+                <Tooltip title={'\u67e5\u770b / \u5904\u7406'}>
+                  <Button
+                    type="link"
+                    icon={<EyeOutlined />}
+                    size="small"
+                    onClick={() => openDrawer(row)}
+                    style={{ flexShrink: 0 }}
+                  />
+                </Tooltip>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <Table<FeedbackRow>
+          rowKey="id"
+          dataSource={list}
+          columns={columns}
+          loading={loading}
+          pagination={{ pageSize: 20 }}
+          size="small"
+          scroll={{ x: 'max-content' }}
+        />
+      )}
 
       <Drawer
-        title="反馈详情"
+        title={'\u67e5\u770b / \u5904\u7406'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        width={480}
+        width="min(480px, calc(100vw - 24px))"
         extra={
           <Button type="primary" loading={saving} onClick={handleSave}>
-            保存
+            {'\u4fdd\u5b58'}
           </Button>
         }
       >
@@ -156,11 +222,11 @@ export default function FeedbackList() {
           <div>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {selected.user?.username ?? `UID:${selected.user_id}`}
-              &nbsp;·&nbsp;
+              &nbsp;&middot;&nbsp;
               <Tag color={TYPE_COLOR[selected.type] ?? 'default'}>
                 {TYPE_LABEL[selected.type] ?? selected.type}
               </Tag>
-              &nbsp;·&nbsp;{new Date(selected.created_at).toLocaleString('zh-CN')}
+              &nbsp;&middot;&nbsp;{new Date(selected.created_at).toLocaleString('zh-CN')}
             </Typography.Text>
 
             <div
@@ -180,7 +246,7 @@ export default function FeedbackList() {
             {selected.images && selected.images.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
-                  附件截图
+                  {'\u9644\u56fe'}
                 </Typography.Text>
                 <Image.PreviewGroup>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -191,7 +257,7 @@ export default function FeedbackList() {
                         width={90}
                         height={90}
                         style={{ objectFit: 'cover', borderRadius: 8, cursor: 'pointer' }}
-                        alt={`截图${idx + 1}`}
+                        alt={`\u56fe\u7247${idx + 1}`}
                       />
                     ))}
                   </div>
@@ -202,19 +268,19 @@ export default function FeedbackList() {
             <Form form={form} layout="vertical">
               <Form.Item
                 name="status"
-                label="处理状态"
+                label={'\u5904\u7406\u72b6\u6001'}
                 rules={[{ required: true }]}
               >
                 <Select
                   options={[
-                    { label: '待处理', value: 'pending' },
-                    { label: '已查阅', value: 'reviewed' },
-                    { label: '已关闭', value: 'closed' },
+                    { label: '\u5f85\u5904\u7406', value: 'pending' },
+                    { label: '\u5df2\u5904\u7406', value: 'reviewed' },
+                    { label: '\u5df2\u5173\u95ed', value: 'closed' },
                   ]}
                 />
               </Form.Item>
-              <Form.Item name="admin_note" label="管理员备注">
-                <Input.TextArea rows={4} placeholder="可填写处理说明..." />
+              <Form.Item name="admin_note" label={'\u7ba1\u7406\u5458\u5907\u6ce8'}>
+                <Input.TextArea rows={4} placeholder={'\u8f93\u5165\u5904\u7406\u5907\u6ce8\u2026'} />
               </Form.Item>
             </Form>
           </div>

@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import type { AIModel } from '@/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 // ── Supported format matrix ───────────────────────────────────────────────────
 // Defines which api_format values are actually implemented in the backend adapter.
@@ -106,6 +107,7 @@ export default function ModelsTable() {
   const [editingModel, setEditingModel] = useState<AIModel | null>(null);
   const [selectedType, setSelectedType] = useState<string>('chat');
   const [form] = Form.useForm();
+  const isMobile = useIsMobile();
 
   const load = () => {
     setLoading(true);
@@ -205,112 +207,179 @@ export default function ModelsTable() {
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>添加模型</Button>
       </div>
 
-      <Table
-        dataSource={models}
-        rowKey="id"
-        loading={loading}
-        scroll={{ x: 860 }}
-        columns={[
-          {
-            title: '模型标识符',
-            dataIndex: 'model_name',
-            key: 'model_name',
-            render: (v) => <code style={{ fontSize: 12 }}>{v}</code>,
-          },
-          { title: '显示名称', dataIndex: 'display_name', key: 'display_name' },
-          {
-            title: '类型',
-            dataIndex: 'type',
-            key: 'type',
-            width: 90,
-            render: (v) => (
-              <Tag color={v === 'chat' ? 'blue' : v === 'image' ? 'purple' : 'orange'}>
-                {MODEL_TYPES.find((t) => t.value === v)?.label ?? v}
-              </Tag>
-            ),
-          },
-          {
-            title: 'API 格式',
-            dataIndex: 'api_format',
-            key: 'api_format',
-            width: 110,
-            render: (v: string) => {
-              const meta = FORMAT_META[v];
-              return meta
-                ? <Tag color={meta.color}>{meta.short}</Tag>
-                : <Tag>{v || 'openai_chat'}</Tag>;
+      {isMobile ? (
+        <div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.45)' }}>加载中…</div>
+          ) : models.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.35)' }}>暂无模型</div>
+          ) : models.map((m) => {
+            const typeMeta = MODEL_TYPES.find((t) => t.value === m.type);
+            const fmtMeta = FORMAT_META[m.api_format || ''];
+            const ok = isSupported(m.type, m.api_format || 'openai_chat');
+            return (
+              <div key={m.id} style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 12,
+                padding: '12px 14px',
+                marginBottom: 10,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ marginBottom: 4 }}>
+                      <code style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{m.model_name}</code>
+                    </div>
+                    {m.display_name && (
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.92)', marginBottom: 8 }}>
+                        {m.display_name}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+                      <Tag color={m.type === 'chat' ? 'blue' : m.type === 'image' ? 'purple' : 'orange'} style={{ margin: 0 }}>
+                        {typeMeta?.label ?? m.type}
+                      </Tag>
+                      {fmtMeta
+                        ? <Tag color={fmtMeta.color} style={{ margin: 0 }}>{fmtMeta.short}</Tag>
+                        : <Tag style={{ margin: 0 }}>{m.api_format || 'openai_chat'}</Tag>
+                      }
+                      {ok
+                        ? <Tag color="green" style={{ margin: 0 }}>✓ 已适配</Tag>
+                        : <Tag color="warning" style={{ margin: 0 }}>⚠ 暂不支持</Tag>
+                      }
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                      {m.max_tokens && <span>Max {m.max_tokens}</span>}
+                      {m.supports_streaming && <Tag color="green" style={{ margin: 0, fontSize: 11 }}>流式</Tag>}
+                      {m.supports_vision && <Tag color="purple" style={{ margin: 0, fontSize: 11 }}>视觉</Tag>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+                    <Switch
+                      size="small"
+                      checked={m.status === 'active'}
+                      onChange={() => handleToggleStatus(m)}
+                    />
+                    <Space size={4}>
+                      <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(m)}>编辑</Button>
+                      <Popconfirm title="确定删除？" onConfirm={() => handleDelete(m.id)} okText="删除" okType="danger" cancelText="取消">
+                        <Button size="small" danger icon={<DeleteOutlined />} />
+                      </Popconfirm>
+                    </Space>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <Table
+          dataSource={models}
+          rowKey="id"
+          loading={loading}
+          scroll={{ x: 860 }}
+          columns={[
+            {
+              title: '模型标识符',
+              dataIndex: 'model_name',
+              key: 'model_name',
+              render: (v) => <code style={{ fontSize: 12 }}>{v}</code>,
             },
-          },
-          {
-            title: (
-              <Tooltip title="该类型 + API 格式组合是否已有后端适配器支持">
-                适配器
-              </Tooltip>
-            ),
-            key: 'support',
-            width: 80,
-            render: (_, record) => {
-              const ok = isSupported(record.type, record.api_format || 'openai_chat');
-              return ok ? (
-                <Tooltip title="已支持，可正常使用">
-                  <CheckCircleFilled style={{ color: '#52c41a', fontSize: 16 }} />
-                </Tooltip>
-              ) : (
-                <Tooltip title="当前版本暂不支持此组合，调用时会报错">
-                  <WarningFilled style={{ color: '#faad14', fontSize: 16 }} />
-                </Tooltip>
-              );
+            { title: '显示名称', dataIndex: 'display_name', key: 'display_name' },
+            {
+              title: '类型',
+              dataIndex: 'type',
+              key: 'type',
+              width: 90,
+              render: (v) => (
+                <Tag color={v === 'chat' ? 'blue' : v === 'image' ? 'purple' : 'orange'}>
+                  {MODEL_TYPES.find((t) => t.value === v)?.label ?? v}
+                </Tag>
+              ),
             },
-          },
-          { title: 'Max Tokens', dataIndex: 'max_tokens', key: 'max_tokens', width: 110 },
-          {
-            title: '流式',
-            dataIndex: 'supports_streaming',
-            key: 'supports_streaming',
-            width: 60,
-            render: (v) => v ? <Tag color="green">✓</Tag> : <Tag>—</Tag>,
-          },
-          {
-            title: '视觉',
-            dataIndex: 'supports_vision',
-            key: 'supports_vision',
-            width: 60,
-            render: (v) => v ? <Tag color="purple">✓</Tag> : <Tag>—</Tag>,
-          },
-          {
-            title: '启用',
-            key: 'status',
-            width: 70,
-            render: (_, record) => (
-              <Switch
-                size="small"
-                checked={record.status === 'active'}
-                onChange={() => handleToggleStatus(record)}
-              />
-            ),
-          },
-          {
-            title: '操作',
-            key: 'action',
-            width: 120,
-            render: (_, record) => (
-              <Space>
-                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>编辑</Button>
-                <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-                  <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]}
-      />
+            {
+              title: 'API 格式',
+              dataIndex: 'api_format',
+              key: 'api_format',
+              width: 110,
+              render: (v: string) => {
+                const meta = FORMAT_META[v];
+                return meta
+                  ? <Tag color={meta.color}>{meta.short}</Tag>
+                  : <Tag>{v || 'openai_chat'}</Tag>;
+              },
+            },
+            {
+              title: (
+                <Tooltip title="该类型 + API 格式组合是否已有后端适配器支持">
+                  适配器
+                </Tooltip>
+              ),
+              key: 'support',
+              width: 80,
+              render: (_, record) => {
+                const ok = isSupported(record.type, record.api_format || 'openai_chat');
+                return ok ? (
+                  <Tooltip title="已支持，可正常使用">
+                    <CheckCircleFilled style={{ color: '#52c41a', fontSize: 16 }} />
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="当前版本暂不支持此组合，调用时会报错">
+                    <WarningFilled style={{ color: '#faad14', fontSize: 16 }} />
+                  </Tooltip>
+                );
+              },
+            },
+            { title: 'Max Tokens', dataIndex: 'max_tokens', key: 'max_tokens', width: 110 },
+            {
+              title: '流式',
+              dataIndex: 'supports_streaming',
+              key: 'supports_streaming',
+              width: 60,
+              render: (v) => v ? <Tag color="green">✓</Tag> : <Tag>—</Tag>,
+            },
+            {
+              title: '视觉',
+              dataIndex: 'supports_vision',
+              key: 'supports_vision',
+              width: 60,
+              render: (v) => v ? <Tag color="purple">✓</Tag> : <Tag>—</Tag>,
+            },
+            {
+              title: '启用',
+              key: 'status',
+              width: 70,
+              render: (_, record) => (
+                <Switch
+                  size="small"
+                  checked={record.status === 'active'}
+                  onChange={() => handleToggleStatus(record)}
+                />
+              ),
+            },
+            {
+              title: '操作',
+              key: 'action',
+              width: 120,
+              render: (_, record) => (
+                <Space>
+                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>编辑</Button>
+                  <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
+                    <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
+                  </Popconfirm>
+                </Space>
+              ),
+            },
+          ]}
+        />
+      )}
 
       <Modal
         title={editingModel ? '编辑模型' : '添加模型'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         footer={null}
-        width={540}
+        width="min(540px, calc(100vw - 24px))"
         destroyOnHidden
       >
         {/* Supported combinations reference */}
