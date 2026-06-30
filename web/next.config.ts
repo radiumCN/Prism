@@ -4,8 +4,9 @@ const pkg = require("./package.json") as { version: string };
 
 const nextConfig: NextConfig = {
   env: {
-    // Injected at build time from package.json — use process.env.NEXT_PUBLIC_WEB_VERSION in client code.
-    NEXT_PUBLIC_WEB_VERSION: pkg.version,
+    // Prefer the version passed by build.sh via NEXT_PUBLIC_APP_VERSION env var;
+    // fall back to package.json version for local `npm run build`.
+    NEXT_PUBLIC_WEB_VERSION: process.env.NEXT_PUBLIC_APP_VERSION ?? pkg.version,
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
   },
 };

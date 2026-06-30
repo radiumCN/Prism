@@ -95,7 +95,7 @@ if [[ "$BUILD_WEB" == true ]]; then
   echo ""
   echo "▸ Building Next.js frontend..."
   cd "$SCRIPT_DIR/web"
-  NODE_OPTIONS="--max-old-space-size=1024" npm run build
+  NEXT_PUBLIC_APP_VERSION="$VERSION" NODE_OPTIONS="--max-old-space-size=1024" npm run build
   echo "  -> web/.next"
   cd "$SCRIPT_DIR"
 fi
